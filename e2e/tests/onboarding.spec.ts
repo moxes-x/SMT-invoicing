@@ -16,8 +16,8 @@ test("sign up, create a business, see the dashboard, log out", async ({ page }) 
   await page.getByText("No", { exact: true }).click();
   await page.getByRole("button", { name: "Continue" }).click();
 
-  await expect(page.getByText("Mwila Hair Studio").first()).toBeVisible();
-  await expect(page.getByText("API connected")).toBeVisible();
+  await expect(page.getByRole("banner")).toContainText("Mwila Hair Studio");
+  await expect(page.getByRole("heading", { name: "Hello, Mwila" })).toBeVisible();
 
   await page.getByRole("button", { name: "Log out" }).click();
   await expect(page).toHaveURL(/\/login$/);

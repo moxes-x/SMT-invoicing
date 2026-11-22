@@ -1,0 +1,113 @@
+{% load money %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Invoice {{ invoice.number }} · {{ business.name }}</title>
+  <style>
+    @page { size: A4; margin: 16mm 14mm; }
+    :root { --ink:#1b1f24; --muted:#5f6b76; --line:#e3e6ea; --brand:#0f766e; --warn:#b45309; --bad:#b91c1c; }
+    * { box-sizing: border-box; }
+    body { margin:0; font: 15px/1.45 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color:var(--ink); background:{% if pdf %}#fff{% else %}#f4f5f7{% endif %}; }
+    .page { max-width: 760px; margin: 0 auto; background:#fff; padding: {% if pdf %}0{% else %}20px 16px 28px{% endif %}; }
+    @media (min-width: 700px) { .page { {% if not pdf %}margin: 24px auto; padding: 36px 40px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08);{% endif %} } }
+    .top { display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+    h1 { font-size: 28px; margin: 0 0 2px; letter-spacing: .5px; }
+    .muted { color: var(--muted); }
+    .biz { font-weight: 600; font-size: 17px; }
+    .badge { display:inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing:.4px; background:#eef2f3; }
+    .badge.paid { background:#dcfce7; color:#166534; } .badge.overdue { background:#fee2e2; color:var(--bad); }
+    .badge.partial { background:#fef3c7; color:var(--warn); } .badge.void { background:#e5e7eb; color:#374151; }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 22px 0; }
+    @media (max-width: 520px) { .grid { grid-template-columns: 1fr; } }
+    .label { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); margin-bottom: 2px; }
+    table { width:100%; border-collapse: collapse; margin-top: 8px; }
+    th { text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:var(--muted); border-bottom: 1px solid var(--line); padding: 8px 4px; }
+    td { padding: 10px 4px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .num { text-align:right; white-space:nowrap; }
+    @media (max-width: 520px) { .hide-sm { display:none; } }
+    .totals { margin-left:auto; width: 100%; max-width: 320px; margin-top: 12px; }
+    .totals div { display:flex; justify-content:space-between; padding: 4px 0; }
+    .totals .grand { font-size: 18px; font-weight: 700; border-top: 2px solid var(--ink); margin-top: 4px; padding-top: 8px; }
+    .totals .due { color: var(--brand); font-weight: 700; font-size: 18px; }
+    .box { border:1px solid var(--line); border-radius: 10px; padding: 14px; margin-top: 22px; white-space: pre-line; }
+    .banner { padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; font-weight:600; }
+    .banner.void { background:#f3f4f6; } .banner.draft { background:#fef3c7; }
+    .actions { margin-top: 22px; }
+    .btn { display:block; text-align:center; background: var(--brand); color:#fff; text-decoration:none; padding: 14px; border-radius: 8px; font-weight:600; }
+    footer { margin-top: 28px; font-size: 12px; }
+  </style>
+</head>
+<body>
+<div class="page">
+  {% if invoice.status == "void" %}<div class="banner void">This invoice has been cancelled (void){% if invoice.reissued_as %} and replaced by {{ invoice.reissued_as.number }}{% endif %}.</div>{% endif %}
+  {% if preview_draft %}<div class="banner draft">Draft preview. Your customer can't open this link until you send the invoice.</div>{% endif %}
+  <div class="top">
+    <div>
+      <h1>Invoice</h1>
+      <div class="muted">{{ invoice.number }}</div>
+    </div>
+    <div><span class="badge {{ invoice.display_status }}">{{ invoice.display_status_label }}</span></div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="label">From</div>
+      <div class="biz">{{ business.name }}</div>
+      {% if business.address %}<div class="muted" style="white-space:pre-line">{{ business.address }}</div>{% endif %}
+      {% if business.phone %}<div class="muted">{{ business.phone }}</div>{% endif %}
+      {% if business.email %}<div class="muted">{{ business.email }}</div>{% endif %}
+      {% if business.tpin %}<div class="muted">TPIN {{ business.tpin }}</div>{% endif %}
+    </div>
+    <div>
+      <div class="label">Bill to</div>
+      <div class="biz">{{ customer.name }}</div>
+      {% if customer.address %}<div class="muted" style="white-space:pre-line">{{ customer.address }}</div>{% endif %}
+      {% if customer.phone %}<div class="muted">{{ customer.phone }}</div>{% endif %}
+      {% if customer.email %}<div class="muted">{{ customer.email }}</div>{% endif %}
+    </div>
+    <div>
+      <div class="label">Issued</div>
+      <div>{{ invoice.issue_date|date:"j M Y" }}</div>
+    </div>
+    <div>
+      <div class="label">Due</div>
+      <div>{{ invoice.due_date|date:"j M Y" }}</div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>Item</th><th class="num">Qty</th><th class="num hide-sm">Price</th><th class="num">Amount</th></tr></thead>
+    <tbody>
+      {% for line in lines %}
+      <tr>
+        <td>{{ line.description }}{% if line.discount %}<div class="muted" style="font-size:13px">Discount −{{ line.discount|money:invoice.currency }}</div>{% endif %}</td>
+        <td class="num">{{ line.quantity|qty }}</td>
+        <td class="num hide-sm">{{ line.unit_price|money:invoice.currency }}</td>
+        <td class="num">{{ line.amount|money:invoice.currency }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <div><span class="muted">Subtotal</span><span>{{ invoice.subtotal|money:invoice.currency }}</span></div>
+    {% if invoice.discount_total %}<div><span class="muted">Discount</span><span>−{{ invoice.discount_total|money:invoice.currency }}</span></div>{% endif %}
+    <div class="grand"><span>Total</span><span>{{ invoice.total|money:invoice.currency }}</span></div>
+    {% if invoice.amount_paid %}<div><span class="muted">Paid</span><span>−{{ invoice.amount_paid|money:invoice.currency }}</span></div>{% endif %}
+    {% if invoice.status != "void" %}<div class="due"><span>Balance due</span><span>{{ invoice.balance|money:invoice.currency }}</span></div>{% endif %}
+  </div>
+
+  {% if business.payment_details and invoice.balance > 0 and invoice.status != "void" %}
+  <div class="box"><div class="label">How to pay</div>{{ business.payment_details }}<div class="muted" style="margin-top:6px">Please use <strong>{{ invoice.number }}</strong> as the reference.</div></div>
+  {% endif %}
+  {% if invoice.notes %}<div class="box"><div class="label">Notes</div>{{ invoice.notes }}</div>{% endif %}
+
+  {% if not pdf %}
+  <div class="actions"><a class="btn" href="pdf/">Download PDF</a></div>
+  {% endif %}
+  <footer class="muted">This is an invoice, not a tax invoice.</footer>
+</div>
+</body>
+</html>

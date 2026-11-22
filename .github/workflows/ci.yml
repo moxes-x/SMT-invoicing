@@ -25,6 +25,8 @@ jobs:
     defaults: { run: { working-directory: backend } }
     steps:
       - uses: actions/checkout@v4
+      - name: WeasyPrint system libraries
+        run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libpangoft2-1.0-0
       - uses: astral-sh/setup-uv@v5
         with: { enable-cache: true }
       - run: uv sync --frozen

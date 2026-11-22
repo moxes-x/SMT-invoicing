@@ -1,9 +1,16 @@
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from "react-router";
 
 import { useMe } from "@/api/auth";
-import { HomePage } from "@/pages/home";
+import { AppLayout } from "@/components/app-layout";
+import { CustomersPage } from "@/pages/customers";
+import { DashboardPage } from "@/pages/dashboard";
+import { InvoiceDetailPage } from "@/pages/invoice-detail";
+import { InvoiceEditorPage } from "@/pages/invoice-editor";
+import { InvoicesPage } from "@/pages/invoices";
+import { ItemsPage } from "@/pages/items";
 import { LoginPage } from "@/pages/login";
 import { OnboardingPage } from "@/pages/onboarding";
+import { SettingsPage } from "@/pages/settings";
 import { SignupPage } from "@/pages/signup";
 import { Providers } from "@/providers";
 
@@ -45,7 +52,21 @@ const routes = [
   },
   {
     element: <RequireAuth />,
-    children: [{ path: "/", element: <HomePage /> }],
+    children: [
+      {
+        element: <AppLayout />,
+        children: [
+          { path: "/", element: <DashboardPage /> },
+          { path: "/invoices", element: <InvoicesPage /> },
+          { path: "/invoices/new", element: <InvoiceEditorPage /> },
+          { path: "/invoices/:id", element: <InvoiceDetailPage /> },
+          { path: "/invoices/:id/edit", element: <InvoiceEditorPage /> },
+          { path: "/customers", element: <CustomersPage /> },
+          { path: "/items", element: <ItemsPage /> },
+          { path: "/settings", element: <SettingsPage /> },
+        ],
+      },
+    ],
   },
   { path: "*", element: <Navigate to="/" replace /> },
 ];

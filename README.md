@@ -11,7 +11,7 @@ send invoices as photos, Word files or WhatsApp texts and lose track of who has 
 
 | Layer | Choice |
 |---|---|
-| Backend | Django 5 + Django REST Framework, drf-spectacular (OpenAPI), PostgreSQL |
+| Backend | Django 5 + Django REST Framework, drf-spectacular (OpenAPI), PostgreSQL, WeasyPrint (PDF), django-anymail |
 | Jobs | Celery + Redis (sending, PDFs, reminders) |
 | Frontend | React 19 + TypeScript (strict), Vite, React Router, TanStack Query, React Hook Form + Zod |
 | UI | Tailwind CSS v4 with shadcn/ui tokens, so components from [21st.dev](https://21st.dev) / shadcn drop straight in (`components.json` is configured) |
@@ -44,6 +44,17 @@ React SPA (Vite + TS) ──HTTPS──► Django + DRF ──► PostgreSQL
 
 **Docker:** `docker compose up`, then open http://localhost:5173.
 
+If a port is already taken on your machine, put the ones you want in a `.env` file next to
+`docker-compose.yml` (it's git-ignored) instead of editing the compose file:
+
+```
+DB_PORT=5433
+BACKEND_PORT=8001
+FRONTEND_PORT=5174
+```
+
+Emails print to the backend console in development. PDFs are written to `backend/media/`.
+
 **Without Docker** (needs Postgres and Redis running):
 
 ```bash
@@ -73,26 +84,63 @@ cd backend && uv run python manage.py spectacular --file openapi.yml && cd ../fr
 
 Install hooks once with `uv run --directory backend pre-commit install`.
 
-## API (Phase 0)
+## How invoices work
+
+- **Numbers** are `INV-<year>-<nnnn>` per business, allocated inside `SELECT … FOR UPDATE` on a
+  per-business, per-year counter. A test fires 50 concurrent creations and checks for 50
+  consecutive, unique numbers.
+- **Totals** are computed on the server from the lines (`quantity × unit_price − discount`), summed
+  exactly and rounded half-up **once** at the end. The frontend preview uses the same maths with
+  BigInt, but the server's numbers are what gets stored.
+- **Status** is stored lifecycle (`draft → sent`, or `void`) plus payment state derived from
+  payments (`unpaid`, `partial`, `paid`). `overdue` means sent, not fully paid, and past the due
+  date *in Lusaka time*. The badge shown is one of draft, sent, viewed, partly paid, paid, overdue,
+  void.
+- **Sent invoices are locked.** To change one, "Change" voids it and opens a corrected draft with a
+  new number; both link to each other, and the customer's old link says it was replaced. Invoices
+  are never deleted. An invoice with payments can't be voided until the payments are removed.
+- **Payments** can't exceed the balance, can only be recorded on sent invoices, and can be deleted
+  to fix mistakes (logged on the timeline).
+- **Public link** `/i/<uuid4>/` is server-rendered Django (no JS, small, works in WhatsApp's
+  in-app browser). The first view by someone who isn't a member of the business sets *viewed*.
+  Drafts 404 for the public; owners see a preview banner.
+- **PDF** is WeasyPrint from the same template, cached in storage under a fingerprint of everything
+  printed on it, so it's rebuilt only when something changes. A Celery task pre-builds it on send.
+- **WhatsApp (click-to-chat):** "Send on WhatsApp" marks the invoice sent and opens
+  `wa.me/<number>?text=…` with the message and link. Free, no Meta approval. Logged as a *shared*
+  Delivery; the *viewed* event confirms the customer opened it.
+- **Email** goes through Django's email API (console in dev; set `EMAIL_BACKEND` to an anymail
+  backend such as `anymail.backends.resend.EmailBackend` in production). A Celery task sends it
+  with the PDF attached, retries up to 3 times, and records the Delivery as sent or failed.
+- Every change writes an **ActivityLog** row, shown as the invoice timeline.
+
+## API
 
 | Method | Path | |
 |---|---|---|
 | GET | `/api/health/` | Liveness + DB check (public) |
 | GET | `/api/auth/csrf/` | Sets the `csrftoken` cookie |
-| POST | `/api/auth/signup/` · `/api/auth/login/` · `/api/auth/logout/` | Email + password |
+| POST | `/api/auth/signup/` · `login/` · `logout/` | Email + password (rate limited) |
 | GET | `/api/auth/me/` | User, current business, all businesses |
-| GET/POST | `/api/businesses/` | List mine / create (creator becomes owner) |
-| GET/PATCH | `/api/businesses/{id}/` | Owners and admins can edit |
-| POST | `/api/businesses/{id}/switch/` | Change the current business |
+| GET/POST/PATCH | `/api/businesses/…` | Profile, payment details; `POST {id}/switch/` |
+| CRUD | `/api/customers/` · `/api/items/` | `?search=` |
+| GET/POST/PATCH | `/api/invoices/` | `?status=draft\|unpaid\|partial\|paid\|overdue\|void`, `?customer=`, `?search=` |
+| POST | `/api/invoices/{id}/send/` · `void/` · `reissue/` | Lifecycle |
+| POST | `/api/invoices/{id}/payments/` | Record a payment |
+| POST | `/api/invoices/{id}/whatsapp/` · `email/` | Send |
+| GET | `/api/invoices/{id}/pdf/` | Owner download |
+| GET/DELETE | `/api/payments/{id}/` | Undo a payment |
+| GET | `/api/dashboard/` | Owed, overdue, paid this month, top debtors |
+| GET | `/i/{token}/` · `/i/{token}/pdf/` | Customer-facing page and PDF |
 
-Full schema: `/api/docs/` (Swagger UI).
+All amounts are integers in ngwee (or cents for USD). Full schema: `/api/docs/`.
 
 ## Roadmap
 
 | Phase | Scope |
 |---|---|
 | **0 – Setup** ✅ | Repo, Docker, CI, email auth, Business/Membership tenancy, hello world |
-| 1 – MVP | Customers, items, invoices (draft/send/void), PDF, public link + viewed, WhatsApp click-to-chat, email, manual payments, dashboard |
+| **1 – MVP** ✅ | Customers, items, invoices (draft/send/void), PDF, public link + viewed, WhatsApp click-to-chat, email, manual payments, dashboard |
 | 2 – Automation | WhatsApp Cloud API, delivery webhooks, reminders, recurring invoices, quotes |
 | 3 – Get paid | Mobile-money/card "Pay now", webhook reconciliation, receipts, statements |
 | 4 – Grow | ZRA Smart Invoice integration, team roles, PWA, Bemba/Nyanja labels |

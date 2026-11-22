@@ -1,0 +1,12 @@
+{% load money %}{{ message }}
+
+Invoice {{ invoice.number }}
+Amount: {{ invoice.total|money:invoice.currency }}
+Due: {{ invoice.due_date|date:"j M Y" }}
+
+View it online: {{ invoice.public_url }}
+
+The PDF is attached.
+
+{{ business.name }}{% if business.phone %}
+{{ business.phone }}{% endif %}

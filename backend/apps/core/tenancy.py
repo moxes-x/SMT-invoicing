@@ -34,12 +34,11 @@ class BusinessScopedMixin:
     which avoids leaking whether an id exists.
     """
 
-    request: Request
     business_field = "business"
 
     def get_queryset(self) -> models.QuerySet[Any]:
         qs = super().get_queryset()  # type: ignore[misc]
-        return qs.filter(**{self.business_field: require_business(self.request)})
+        return qs.filter(**{self.business_field: require_business(self.request)})  # type: ignore[attr-defined]
 
     def perform_create(self, serializer: Any) -> None:
-        serializer.save(**{self.business_field: require_business(self.request)})
+        serializer.save(**{self.business_field: require_business(self.request)})  # type: ignore[attr-defined]

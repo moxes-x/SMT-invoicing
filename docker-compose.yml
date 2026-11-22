@@ -1,4 +1,9 @@
 # Local development stack: `docker compose up`, then open http://localhost:5173
+# Host ports clash with something else? Set them in a .env file next to this one, e.g.
+#   DB_PORT=5433
+#   BACKEND_PORT=8001
+#   FRONTEND_PORT=5174
+# (Containers still talk to each other on the default ports; only the host side changes.)
 services:
   db:
     image: postgres:16
@@ -6,7 +11,7 @@ services:
       POSTGRES_DB: invoicing
       POSTGRES_USER: invoicing
       POSTGRES_PASSWORD: invoicing
-    ports: ["5432:5432"]
+    ports: ["${DB_PORT:-5432}:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U invoicing"]
@@ -15,7 +20,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    ports: ["6379:6379"]
+    ports: ["${REDIS_PORT:-6379}:6379"]
 
   backend:
     build: ./backend
@@ -26,8 +31,11 @@ services:
       DATABASE_URL: postgres://invoicing:invoicing@db:5432/invoicing
       REDIS_URL: redis://redis:6379/0
       ALLOWED_HOSTS: localhost,127.0.0.1,backend
+      CSRF_TRUSTED_ORIGINS: http://localhost:${FRONTEND_PORT:-5173},http://127.0.0.1:${FRONTEND_PORT:-5173}
+      PUBLIC_BASE_URL: http://localhost:${FRONTEND_PORT:-5173}
+      MEDIA_ROOT: /app/media
     volumes: ["./backend:/app"]
-    ports: ["8000:8000"]
+    ports: ["${BACKEND_PORT:-8000}:8000"]
     depends_on:
       db: { condition: service_healthy }
       redis: { condition: service_started }
@@ -44,7 +52,7 @@ services:
     environment:
       VITE_BACKEND_URL: http://backend:8000
     volumes: ["./frontend:/app", "/app/node_modules"]
-    ports: ["5173:5173"]
+    ports: ["${FRONTEND_PORT:-5173}:5173"]
     depends_on: [backend]
 
 volumes:

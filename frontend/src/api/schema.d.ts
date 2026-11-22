@@ -140,6 +140,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/customers/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        get: operations["customers_list"];
+        put?: never;
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        post: operations["customers_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/customers/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        get: operations["customers_retrieve"];
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        put: operations["customers_update"];
+        post?: never;
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        delete: operations["customers_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        patch: operations["customers_partial_update"];
+        trace?: never;
+    };
+    "/api/dashboard/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["dashboard_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health/": {
         parameters: {
             query?: never;
@@ -156,10 +240,281 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/invoices/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Invoices are never deleted, only voided, so the numbering has no unexplained gaps. */
+        get: operations["invoices_list"];
+        put?: never;
+        /** @description Invoices are never deleted, only voided, so the numbering has no unexplained gaps. */
+        post: operations["invoices_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invoices/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Invoices are never deleted, only voided, so the numbering has no unexplained gaps. */
+        get: operations["invoices_retrieve"];
+        /** @description Invoices are never deleted, only voided, so the numbering has no unexplained gaps. */
+        put: operations["invoices_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Invoices are never deleted, only voided, so the numbering has no unexplained gaps. */
+        patch: operations["invoices_partial_update"];
+        trace?: never;
+    };
+    "/api/invoices/{id}/email/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Invoices are never deleted, only voided, so the numbering has no unexplained gaps. */
+        post: operations["invoices_email_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invoices/{id}/payments/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Invoices are never deleted, only voided, so the numbering has no unexplained gaps. */
+        post: operations["invoices_payments_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invoices/{id}/pdf/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Invoices are never deleted, only voided, so the numbering has no unexplained gaps. */
+        get: operations["invoices_pdf_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invoices/{id}/reissue/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Invoices are never deleted, only voided, so the numbering has no unexplained gaps. */
+        post: operations["invoices_reissue_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invoices/{id}/send/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Lock the invoice (draft → sent) without delivering it, e.g. handed over on paper. */
+        post: operations["invoices_send_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invoices/{id}/void/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Invoices are never deleted, only voided, so the numbering has no unexplained gaps. */
+        post: operations["invoices_void_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invoices/{id}/whatsapp/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Marks the invoice sent and returns a wa.me link for the owner to open. */
+        post: operations["invoices_whatsapp_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/items/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        get: operations["items_list"];
+        put?: never;
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        post: operations["items_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/items/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        get: operations["items_retrieve"];
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        put: operations["items_update"];
+        post?: never;
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        delete: operations["items_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        patch: operations["items_partial_update"];
+        trace?: never;
+    };
+    "/api/payments/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Payments are recorded via POST /invoices/{id}/payments/; listed and undone here. */
+        get: operations["payments_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Payments are recorded via POST /invoices/{id}/payments/; listed and undone here. */
+        get: operations["payments_retrieve"];
+        put?: never;
+        post?: never;
+        /** @description Payments are recorded via POST /invoices/{id}/payments/; listed and undone here. */
+        delete: operations["payments_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        ActivityLog: {
+            readonly id: number;
+            verb: components["schemas"]["VerbEnum"];
+            message: string;
+            readonly actor_name: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        ActivityLogRequest: {
+            verb: components["schemas"]["VerbEnum"];
+            message: string;
+        };
         Business: {
             readonly id: number;
             name: string;
@@ -171,7 +526,7 @@ export interface components {
             vat_registered?: boolean;
             /** @description Bank / MTN MoMo / Airtel Money details printed on invoices. */
             payment_details?: string;
-            default_currency?: components["schemas"]["DefaultCurrencyEnum"];
+            default_currency?: components["schemas"]["CurrencyEnum"];
             readonly role: string | null;
             readonly compliance_notice: string | null;
             /** Format: date-time */
@@ -187,17 +542,209 @@ export interface components {
             vat_registered?: boolean;
             /** @description Bank / MTN MoMo / Airtel Money details printed on invoices. */
             payment_details?: string;
-            default_currency?: components["schemas"]["DefaultCurrencyEnum"];
+            default_currency?: components["schemas"]["CurrencyEnum"];
         };
         /**
          * @description * `ZMW` - Zambian Kwacha
          *     * `USD` - US Dollar
          * @enum {string}
          */
-        DefaultCurrencyEnum: "ZMW" | "USD";
+        CurrencyEnum: "ZMW" | "USD";
+        Customer: {
+            readonly id: number;
+            name: string;
+            phone?: string;
+            email?: string;
+            address?: string;
+            notes?: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        CustomerRequest: {
+            name: string;
+            phone?: string;
+            email?: string;
+            address?: string;
+            notes?: string;
+        };
+        CustomerSummary: {
+            readonly id: number;
+            name: string;
+            /** @description E.164, WhatsApp */
+            phone?: string;
+            email?: string;
+        };
+        CustomerSummaryRequest: {
+            name: string;
+            /** @description E.164, WhatsApp */
+            phone?: string;
+            email?: string;
+        };
+        Dashboard: {
+            owed: components["schemas"]["MoneyByCurrency"][];
+            overdue: components["schemas"]["MoneyByCurrency"][];
+            paid_this_month: components["schemas"]["MoneyByCurrency"][];
+            drafts: number;
+            top_debtors: components["schemas"]["Debtor"][];
+            recent: components["schemas"]["InvoiceList"][];
+        };
+        Debtor: {
+            customer_id: number;
+            name: string;
+            currency: string;
+            balance: number;
+            invoices: number;
+        };
+        Delivery: {
+            id: number;
+            channel: string;
+            recipient: string;
+            status: string;
+        };
+        /**
+         * @description * `draft` - Draft
+         *     * `sent` - Sent
+         *     * `viewed` - Viewed
+         *     * `partial` - Partly paid
+         *     * `paid` - Paid
+         *     * `overdue` - Overdue
+         *     * `void` - Void
+         * @enum {string}
+         */
+        DisplayStatusEnum: "draft" | "sent" | "viewed" | "partial" | "paid" | "overdue" | "void";
+        EmailRequestRequest: {
+            /** Format: email */
+            to?: string;
+            message?: string;
+        };
         Health: {
             status: string;
             database: string;
+        };
+        Invoice: {
+            readonly id: number;
+            readonly number: string;
+            readonly status: components["schemas"]["StatusEnum"];
+            readonly display_status: components["schemas"]["DisplayStatusEnum"];
+            readonly payment_status: components["schemas"]["PaymentStatusEnum"];
+            readonly customer: components["schemas"]["CustomerSummary"];
+            currency?: components["schemas"]["CurrencyEnum"];
+            /** Format: date */
+            issue_date?: string;
+            /** Format: date */
+            due_date: string;
+            readonly total: number;
+            readonly amount_paid: number;
+            readonly balance: number;
+            notes?: string;
+            lines: components["schemas"]["InvoiceLine"][];
+            readonly subtotal: number;
+            readonly discount_total: number;
+            readonly is_overdue: boolean;
+            readonly is_locked: boolean;
+            readonly public_url: string;
+            /** Format: date-time */
+            readonly sent_at: string | null;
+            /** Format: date-time */
+            readonly viewed_at: string | null;
+            /** Format: date-time */
+            readonly voided_at: string | null;
+            readonly void_reason: string;
+            readonly reissued_from: components["schemas"]["InvoiceRef"] | null;
+            readonly reissued_as: components["schemas"]["InvoiceRef"] | null;
+            readonly payments: components["schemas"]["Payment"][];
+            readonly activity: components["schemas"]["ActivityLog"][];
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        InvoiceLine: {
+            readonly id: number;
+            item?: number | null;
+            description: string;
+            /** Format: decimal */
+            quantity: string;
+            /**
+             * Format: int64
+             * @description Minor units (ngwee).
+             */
+            unit_price: number;
+            /**
+             * Format: int64
+             * @description Minor units off this line.
+             * @default 0
+             */
+            discount: number;
+            readonly amount: number;
+        };
+        InvoiceLineRequest: {
+            item?: number | null;
+            description: string;
+            /** Format: decimal */
+            quantity: string;
+            /**
+             * Format: int64
+             * @description Minor units (ngwee).
+             */
+            unit_price: number;
+            /**
+             * Format: int64
+             * @description Minor units off this line.
+             * @default 0
+             */
+            discount: number;
+        };
+        InvoiceList: {
+            readonly id: number;
+            readonly number: string;
+            readonly status: components["schemas"]["StatusEnum"];
+            readonly display_status: components["schemas"]["DisplayStatusEnum"];
+            readonly payment_status: components["schemas"]["PaymentStatusEnum"];
+            readonly customer: components["schemas"]["CustomerSummary"];
+            readonly currency: components["schemas"]["CurrencyEnum"];
+            /** Format: date */
+            readonly issue_date: string;
+            /** Format: date */
+            readonly due_date: string;
+            readonly total: number;
+            readonly amount_paid: number;
+            readonly balance: number;
+        };
+        InvoiceRef: {
+            id: number;
+            number: string;
+        };
+        InvoiceRequest: {
+            currency?: components["schemas"]["CurrencyEnum"];
+            /** Format: date */
+            issue_date?: string;
+            /** Format: date */
+            due_date: string;
+            customer_id: number;
+            notes?: string;
+            lines: components["schemas"]["InvoiceLineRequest"][];
+        };
+        Item: {
+            readonly id: number;
+            name: string;
+            description?: string;
+            /**
+             * Format: int64
+             * @description Minor units (ngwee).
+             */
+            unit_price: number;
+            is_active?: boolean;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        ItemRequest: {
+            name: string;
+            description?: string;
+            /**
+             * Format: int64
+             * @description Minor units (ngwee).
+             */
+            unit_price: number;
+            is_active?: boolean;
         };
         LoginRequest: {
             /** Format: email */
@@ -208,6 +755,20 @@ export interface components {
             user: components["schemas"]["User"];
             current_business: components["schemas"]["Business"] | null;
             businesses: components["schemas"]["Business"][];
+        };
+        /**
+         * @description * `cash` - Cash
+         *     * `mtn_momo` - MTN MoMo
+         *     * `airtel_money` - Airtel Money
+         *     * `bank` - Bank transfer
+         *     * `other` - Other
+         * @enum {string}
+         */
+        MethodEnum: "cash" | "mtn_momo" | "airtel_money" | "bank" | "other";
+        MoneyByCurrency: {
+            currency: string;
+            amount: number;
+            count: number;
         };
         PaginatedBusinessList: {
             /** @example 123 */
@@ -224,6 +785,66 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Business"][];
         };
+        PaginatedCustomerList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Customer"][];
+        };
+        PaginatedInvoiceListList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["InvoiceList"][];
+        };
+        PaginatedItemList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Item"][];
+        };
+        PaginatedPaymentList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Payment"][];
+        };
         PatchedBusinessRequest: {
             name?: string;
             email?: string;
@@ -234,7 +855,72 @@ export interface components {
             vat_registered?: boolean;
             /** @description Bank / MTN MoMo / Airtel Money details printed on invoices. */
             payment_details?: string;
-            default_currency?: components["schemas"]["DefaultCurrencyEnum"];
+            default_currency?: components["schemas"]["CurrencyEnum"];
+        };
+        PatchedCustomerRequest: {
+            name?: string;
+            phone?: string;
+            email?: string;
+            address?: string;
+            notes?: string;
+        };
+        PatchedInvoiceRequest: {
+            currency?: components["schemas"]["CurrencyEnum"];
+            /** Format: date */
+            issue_date?: string;
+            /** Format: date */
+            due_date?: string;
+            customer_id?: number;
+            notes?: string;
+            lines?: components["schemas"]["InvoiceLineRequest"][];
+        };
+        PatchedItemRequest: {
+            name?: string;
+            description?: string;
+            /**
+             * Format: int64
+             * @description Minor units (ngwee).
+             */
+            unit_price?: number;
+            is_active?: boolean;
+        };
+        Payment: {
+            readonly id: number;
+            /**
+             * Format: int64
+             * @description Minor units (ngwee).
+             */
+            amount: number;
+            /** Format: date */
+            paid_on?: string;
+            method?: components["schemas"]["MethodEnum"];
+            readonly method_label: string;
+            reference?: string;
+            note?: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        PaymentRequest: {
+            /**
+             * Format: int64
+             * @description Minor units (ngwee).
+             */
+            amount: number;
+            /** Format: date */
+            paid_on?: string;
+            method?: components["schemas"]["MethodEnum"];
+            reference?: string;
+            note?: string;
+        };
+        /**
+         * @description * `unpaid` - Unpaid
+         *     * `partial` - Partly paid
+         *     * `paid` - Paid
+         * @enum {string}
+         */
+        PaymentStatusEnum: "unpaid" | "partial" | "paid";
+        ReasonRequest: {
+            reason?: string;
         };
         SignupRequest: {
             /** Format: email */
@@ -242,11 +928,38 @@ export interface components {
             password: string;
             full_name?: string;
         };
+        /**
+         * @description * `draft` - Draft
+         *     * `sent` - Sent
+         *     * `void` - Void
+         * @enum {string}
+         */
+        StatusEnum: "draft" | "sent" | "void";
         User: {
             readonly id: number;
             /** Format: email */
             readonly email: string;
             full_name?: string;
+        };
+        /**
+         * @description * `created` - Created
+         *     * `updated` - Updated
+         *     * `sent` - Sent
+         *     * `shared_whatsapp` - Shared via WhatsApp
+         *     * `emailed` - Emailed
+         *     * `email_failed` - Email failed
+         *     * `viewed` - Viewed
+         *     * `payment_recorded` - Payment recorded
+         *     * `payment_deleted` - Payment deleted
+         *     * `voided` - Voided
+         *     * `reissued` - Reissued
+         * @enum {string}
+         */
+        VerbEnum: "created" | "updated" | "sent" | "shared_whatsapp" | "emailed" | "email_failed" | "viewed" | "payment_recorded" | "payment_deleted" | "voided" | "reissued";
+        WhatsAppShare: {
+            /** Format: uri */
+            url: string;
+            message: string;
         };
     };
     responses: never;
@@ -367,6 +1080,8 @@ export interface operations {
             query?: {
                 /** @description A page number within the paginated result set. */
                 page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
             };
             header?: never;
             path?: never;
@@ -505,6 +1220,173 @@ export interface operations {
             };
         };
     };
+    customers_list: {
+        parameters: {
+            query?: {
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedCustomerList"];
+                };
+            };
+        };
+    };
+    customers_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CustomerRequest"];
+                "multipart/form-data": components["schemas"]["CustomerRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Customer"];
+                };
+            };
+        };
+    };
+    customers_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Customer"];
+                };
+            };
+        };
+    };
+    customers_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CustomerRequest"];
+                "multipart/form-data": components["schemas"]["CustomerRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Customer"];
+                };
+            };
+        };
+    };
+    customers_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    customers_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedCustomerRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedCustomerRequest"];
+                "multipart/form-data": components["schemas"]["PatchedCustomerRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Customer"];
+                };
+            };
+        };
+    };
+    dashboard_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Dashboard"];
+                };
+            };
+        };
+    };
     health_retrieve: {
         parameters: {
             query?: never;
@@ -521,6 +1403,551 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Health"];
                 };
+            };
+        };
+    };
+    invoices_list: {
+        parameters: {
+            query?: {
+                customer?: number;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+                status?: "draft" | "overdue" | "paid" | "partial" | "sent" | "unpaid" | "void";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedInvoiceListList"];
+                };
+            };
+        };
+    };
+    invoices_create: {
+        parameters: {
+            query?: {
+                customer?: number;
+                status?: "draft" | "overdue" | "paid" | "partial" | "sent" | "unpaid" | "void";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvoiceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["InvoiceRequest"];
+                "multipart/form-data": components["schemas"]["InvoiceRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
+                };
+            };
+        };
+    };
+    invoices_retrieve: {
+        parameters: {
+            query?: {
+                customer?: number;
+                status?: "draft" | "overdue" | "paid" | "partial" | "sent" | "unpaid" | "void";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
+                };
+            };
+        };
+    };
+    invoices_update: {
+        parameters: {
+            query?: {
+                customer?: number;
+                status?: "draft" | "overdue" | "paid" | "partial" | "sent" | "unpaid" | "void";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvoiceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["InvoiceRequest"];
+                "multipart/form-data": components["schemas"]["InvoiceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
+                };
+            };
+        };
+    };
+    invoices_partial_update: {
+        parameters: {
+            query?: {
+                customer?: number;
+                status?: "draft" | "overdue" | "paid" | "partial" | "sent" | "unpaid" | "void";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedInvoiceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedInvoiceRequest"];
+                "multipart/form-data": components["schemas"]["PatchedInvoiceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
+                };
+            };
+        };
+    };
+    invoices_email_create: {
+        parameters: {
+            query?: {
+                customer?: number;
+                status?: "draft" | "overdue" | "paid" | "partial" | "sent" | "unpaid" | "void";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["EmailRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["EmailRequestRequest"];
+                "multipart/form-data": components["schemas"]["EmailRequestRequest"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Delivery"];
+                };
+            };
+        };
+    };
+    invoices_payments_create: {
+        parameters: {
+            query?: {
+                customer?: number;
+                status?: "draft" | "overdue" | "paid" | "partial" | "sent" | "unpaid" | "void";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PaymentRequest"];
+                "multipart/form-data": components["schemas"]["PaymentRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Payment"];
+                };
+            };
+        };
+    };
+    invoices_pdf_retrieve: {
+        parameters: {
+            query?: {
+                customer?: number;
+                status?: "draft" | "overdue" | "paid" | "partial" | "sent" | "unpaid" | "void";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+        };
+    };
+    invoices_reissue_create: {
+        parameters: {
+            query?: {
+                customer?: number;
+                status?: "draft" | "overdue" | "paid" | "partial" | "sent" | "unpaid" | "void";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
+                };
+            };
+        };
+    };
+    invoices_send_create: {
+        parameters: {
+            query?: {
+                customer?: number;
+                status?: "draft" | "overdue" | "paid" | "partial" | "sent" | "unpaid" | "void";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
+                };
+            };
+        };
+    };
+    invoices_void_create: {
+        parameters: {
+            query?: {
+                customer?: number;
+                status?: "draft" | "overdue" | "paid" | "partial" | "sent" | "unpaid" | "void";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
+                };
+            };
+        };
+    };
+    invoices_whatsapp_create: {
+        parameters: {
+            query?: {
+                customer?: number;
+                status?: "draft" | "overdue" | "paid" | "partial" | "sent" | "unpaid" | "void";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WhatsAppShare"];
+                };
+            };
+        };
+    };
+    items_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedItemList"];
+                };
+            };
+        };
+    };
+    items_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ItemRequest"];
+                "multipart/form-data": components["schemas"]["ItemRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Item"];
+                };
+            };
+        };
+    };
+    items_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Item"];
+                };
+            };
+        };
+    };
+    items_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ItemRequest"];
+                "multipart/form-data": components["schemas"]["ItemRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Item"];
+                };
+            };
+        };
+    };
+    items_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    items_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedItemRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedItemRequest"];
+                "multipart/form-data": components["schemas"]["PatchedItemRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Item"];
+                };
+            };
+        };
+    };
+    payments_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedPaymentList"];
+                };
+            };
+        };
+    };
+    payments_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Payment"];
+                };
+            };
+        };
+    };
+    payments_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

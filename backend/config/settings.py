@@ -30,6 +30,12 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "apps.core",
     "apps.accounts",
+    "apps.customers",
+    "apps.catalog",
+    "apps.invoices",
+    "apps.payments",
+    "apps.messaging",
+    "apps.audit",
 ]
 
 MIDDLEWARE = [
@@ -84,6 +90,42 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+MEDIA_URL = "media/"
+MEDIA_ROOT = env.path("MEDIA_ROOT", default=BASE_DIR / "media")
+
+# Generated PDFs (and later logos). Local disk by default; set S3_BUCKET for Cloudflare R2 / S3.
+if env("S3_BUCKET", default=""):
+    _default_storage = {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "bucket_name": env("S3_BUCKET"),
+            "endpoint_url": env("S3_ENDPOINT_URL", default=None),
+            "access_key": env("S3_ACCESS_KEY_ID", default=None),
+            "secret_key": env("S3_SECRET_ACCESS_KEY", default=None),
+            "default_acl": "private",
+            "querystring_auth": True,
+        },
+    }
+else:
+    _default_storage = {"BACKEND": "django.core.files.storage.FileSystemStorage"}
+STORAGES = {
+    "default": _default_storage,
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
+if DEBUG:
+    STORAGES["staticfiles"] = {"BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"}
+
+# Where customers open invoices. Same origin as the app (the SPA proxies /i/ to Django).
+PUBLIC_BASE_URL = env("PUBLIC_BASE_URL", default="http://localhost:5173")
+ADMIN_URL = env("ADMIN_URL", default="admin/")
+
+# Email: console in development; set EMAIL_BACKEND to an anymail backend in production, e.g.
+# anymail.backends.resend.EmailBackend with ANYMAIL_RESEND_API_KEY.
+EMAIL_BACKEND = env("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="invoices@localhost")
+ANYMAIL = {
+    k.removeprefix("ANYMAIL_"): v for k, v in env.ENVIRON.items() if k.startswith("ANYMAIL_")
+}
 
 # --- Auth: Django sessions + CSRF (SPA is served from the same site; no JWTs in the browser).
 SESSION_COOKIE_HTTPONLY = True
@@ -101,8 +143,9 @@ REST_FRAMEWORK = {
     ],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "DEFAULT_PAGINATION_CLASS": "apps.core.pagination.Pagination",
     "PAGE_SIZE": 50,
+    "DEFAULT_THROTTLE_RATES": {"auth": "10/min"},
 }
 
 SPECTACULAR_SETTINGS = {
@@ -111,6 +154,7 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
+    "ENUM_NAME_OVERRIDES": {"CurrencyEnum": "apps.accounts.models.Currency"},
 }
 
 CELERY_BROKER_URL = env("REDIS_URL", default="redis://localhost:6379/0")

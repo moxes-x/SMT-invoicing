@@ -12,6 +12,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .middleware import SESSION_KEY, get_current_business
@@ -46,6 +47,8 @@ class SignupView(APIView):
     """DRF skips CSRF for anonymous users; we enforce it here to block login/signup CSRF."""
 
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth"
 
     @extend_schema(request=SignupSerializer, responses={201: MeSerializer})
     def post(self, request: Request) -> Response:
@@ -60,6 +63,8 @@ class SignupView(APIView):
 @method_decorator(csrf_protect, name="dispatch")
 class LoginView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth"
 
     @extend_schema(request=LoginSerializer, responses={200: MeSerializer})
     def post(self, request: Request) -> Response:

@@ -13,7 +13,11 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
-    proxy: { "/api": { target: backend, changeOrigin: false } },
+    // /i/ is the customer-facing invoice page, server-rendered by Django.
+    proxy: {
+      "/api": { target: backend, changeOrigin: false },
+      "/i/": { target: backend, changeOrigin: false },
+    },
   },
   test: {
     globals: true,
