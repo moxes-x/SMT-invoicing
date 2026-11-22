@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { Link } from "react-router";
 import { z } from "zod";
 
+import { useAccess, useMe } from "@/api/auth";
 import { ApiError } from "@/api/client";
 import { useCustomers, useDeleteCustomer, useSaveCustomer, type Customer } from "@/api/resources";
 import { FormField } from "@/components/form-field";
@@ -13,8 +14,10 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { applyApiErrors } from "@/lib/apply-errors";
+import { LANGUAGES, useT } from "@/i18n";
 
 const schema = z.object({
   name: z.string().trim().min(1, "Enter the customer's name.").max(200),
@@ -22,6 +25,8 @@ const schema = z.object({
   email: z.union([z.email("Enter a valid email address."), z.literal("")]).optional(),
   address: z.string().optional(),
   notes: z.string().optional(),
+  language: z.enum(["en", "bem", "ny"]),
+  tpin: z.string().regex(/^(\d{10})?$/, "TPIN is 10 digits (or leave it blank)."),
 });
 type Values = z.infer<typeof schema>;
 
@@ -34,6 +39,10 @@ export function CustomerForm({
 }) {
   const save = useSaveCustomer();
   const remove = useDeleteCustomer();
+  const { canManage } = useAccess();
+  const t = useT();
+  const { data: me } = useMe();
+  const vatRegistered = me?.current_business?.vat_registered ?? false;
   const [formError, setFormError] = useState<string | null>(null);
   const form = useForm<Values>({
     resolver: zodResolver(schema),
@@ -43,6 +52,8 @@ export function CustomerForm({
       email: customer?.email ?? "",
       address: customer?.address ?? "",
       notes: customer?.notes ?? "",
+      language: customer?.language ?? "en",
+      tpin: customer?.tpin ?? "",
     },
   });
   const { errors, isSubmitting } = form.formState;
@@ -53,7 +64,15 @@ export function CustomerForm({
       onDone(await save.mutateAsync({ ...values, id: customer?.id }));
     } catch (err) {
       setFormError(
-        applyApiErrors(err, form.setError, ["name", "phone", "email", "address", "notes"]),
+        applyApiErrors(err, form.setError, [
+          "name",
+          "phone",
+          "email",
+          "address",
+          "notes",
+          "language",
+          "tpin",
+        ]),
       );
     }
   });
@@ -74,12 +93,31 @@ export function CustomerForm({
       <FormField id="c-email" label="Email (optional)" error={errors.email?.message}>
         <Input id="c-email" type="email" {...form.register("email")} />
       </FormField>
+      <FormField id="c-language" label={t("lang.customer")}>
+        <Select id="c-language" {...form.register("language")}>
+          {LANGUAGES.map((l) => (
+            <option key={l.value} value={l.value}>
+              {l.label}
+            </option>
+          ))}
+        </Select>
+      </FormField>
+      {(vatRegistered || customer?.tpin) && (
+        <FormField
+          id="c-tpin"
+          label="Customer TPIN (optional)"
+          error={errors.tpin?.message}
+          hint="For business customers. Printed on ZRA tax invoices."
+        >
+          <Input id="c-tpin" inputMode="numeric" maxLength={10} {...form.register("tpin")} />
+        </FormField>
+      )}
       <FormField id="c-address" label="Address (optional)" error={errors.address?.message}>
         <Textarea id="c-address" rows={2} {...form.register("address")} />
       </FormField>
       {formError && <ErrorNote>{formError}</ErrorNote>}
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
-        {customer ? (
+        {customer && canManage ? (
           <Button
             type="button"
             variant="ghost"
@@ -111,15 +149,19 @@ export function CustomersPage() {
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Customer | "new" | null>(null);
   const { data, isLoading } = useCustomers(search);
+  const { canWrite } = useAccess();
+  const t = useT();
 
   return (
     <div className="grid gap-4">
       <PageHeader
-        title="Customers"
+        title={t("nav.customers")}
         actions={
-          <Button onClick={() => setEditing("new")}>
-            <Plus /> Add
-          </Button>
+          canWrite && (
+            <Button onClick={() => setEditing("new")}>
+              <Plus /> {t("action.add")}
+            </Button>
+          )
         }
       />
       <div className="relative">
@@ -135,7 +177,9 @@ export function CustomersPage() {
 
       {!isLoading && !data?.results.length ? (
         <EmptyState icon={<Users />} title={search ? "No matches" : "No customers yet"}>
-          {!search && <Button onClick={() => setEditing("new")}>Add your first customer</Button>}
+          {canWrite && !search && (
+            <Button onClick={() => setEditing("new")}>Add your first customer</Button>
+          )}
         </EmptyState>
       ) : (
         <Card className="gap-0 py-0">
@@ -144,7 +188,8 @@ export function CustomersPage() {
               <li key={c.id} className="flex items-center gap-3 px-4 py-3">
                 <button
                   type="button"
-                  className="min-w-0 flex-1 text-left"
+                  className="min-w-0 flex-1 text-left disabled:cursor-default"
+                  disabled={!canWrite}
                   onClick={() => setEditing(c)}
                 >
                   <span className="block truncate font-medium">{c.name}</span>

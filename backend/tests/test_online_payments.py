@@ -65,7 +65,7 @@ class TestSettingsApi:
     def test_only_owners_and_admins_can_change(self, owner_a):
         from rest_framework.test import APIClient
 
-        member = MembershipFactory(business=owner_a.business, role="member")
+        member = MembershipFactory(business=owner_a.business, role="staff")
         client = APIClient()
         client.force_login(member.user)
         assert client.get("/api/online-payments/").status_code == 200

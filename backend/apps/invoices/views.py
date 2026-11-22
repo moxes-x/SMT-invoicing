@@ -30,6 +30,7 @@ from .pdf import get_or_build_pdf, pdf_filename
 from .serializers import (
     DashboardSerializer,
     EmailRequestSerializer,
+    ExchangeRateSerializer,
     InvoiceListSerializer,
     InvoiceSerializer,
     ReasonSerializer,
@@ -75,6 +76,7 @@ class InvoiceViewSet(
 
     queryset = Invoice.objects.all()
     permission_classes = [HasBusiness]
+    manager_actions = ("void", "reissue")
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["number", "customer__name"]
     ordering_fields = ["issue_date", "due_date", "total", "number"]
@@ -102,7 +104,9 @@ class InvoiceViewSet(
     @extend_schema(responses={(200, "text/csv"): OpenApiTypes.STR})
     @action(detail=False, methods=["get"])
     def export(self, request: Request) -> HttpResponse:
-        """The invoice list as CSV (same filters as the list; amounts in Kwacha)."""
+        """The invoice list as CSV (same filters as the list), in each invoice's currency.
+
+        Foreign-currency invoices also get their Kwacha rate and total, when a rate is set."""
         from apps.payments.views import csv_response, major
 
         qs = self.filter_queryset(self.get_queryset()).order_by("issue_date", "number")
@@ -117,11 +121,14 @@ class InvoiceViewSet(
                 major(i.amount_paid),
                 major(i.balance) if i.status == Invoice.Status.SENT else "0.00",
                 i.display_status_label,
+                format(i.exchange_rate, "f") if i.exchange_rate else "",
+                major(k) if (k := i.kwacha_total) is not None else "",
             ]
             for i in qs
         )
         header = ["Number", "Issued", "Due", "Customer", "Currency", "Total", "Paid", "Balance"]
-        return csv_response("invoices.csv", [*header, "Status"], rows)
+        extra = ["Status", "Kwacha rate", "Total in Kwacha"]
+        return csv_response("invoices.csv", [*header, *extra], rows)
 
     def _fresh(self, invoice: Invoice) -> Response:
         obj = self.get_queryset().get(pk=invoice.pk)
@@ -208,6 +215,17 @@ class InvoiceViewSet(
         ser.is_valid(raise_exception=True)
         invoice = self.get_object()
         Invoice.objects.filter(pk=invoice.pk).update(reminders_paused=ser.validated_data["paused"])
+        return self._fresh(invoice)
+
+    @extend_schema(request=ExchangeRateSerializer, responses=InvoiceSerializer)
+    @action(detail=True, methods=["post"], url_path="exchange-rate")
+    def exchange_rate(self, request: Request, pk: str | None = None) -> Response:
+        """Set the Kwacha rate of a foreign-currency invoice, also after sending (for reports)."""
+        ser = ExchangeRateSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        invoice = services.set_exchange_rate(
+            self.get_object(), request.user, ser.validated_data["exchange_rate"]
+        )
         return self._fresh(invoice)
 
     @extend_schema(responses={(200, "application/pdf"): OpenApiTypes.BINARY})

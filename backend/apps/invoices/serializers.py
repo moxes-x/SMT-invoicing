@@ -8,6 +8,7 @@ from apps.audit.serializers import ActivityLogSerializer
 from apps.catalog.models import Item
 from apps.core.serializers import MoneyField
 from apps.customers.models import Customer
+from apps.fiscal.serializers import FiscalReceiptSerializer
 from apps.messaging.serializers import DeliverySerializer
 from apps.payments.serializers import PaymentSerializer
 
@@ -43,7 +44,7 @@ class InvoiceLineSerializer(serializers.ModelSerializer[InvoiceLine]):
 class CustomerSummarySerializer(serializers.ModelSerializer[Customer]):
     class Meta:
         model = Customer
-        fields = ["id", "name", "phone", "email"]
+        fields = ["id", "name", "phone", "email", "language"]
 
 
 class InvoiceListSerializer(serializers.ModelSerializer[Invoice]):
@@ -96,11 +97,13 @@ class InvoiceSerializer(InvoiceListSerializer):
     recurring_id = serializers.IntegerField(read_only=True, allow_null=True)
     reissued_from = serializers.SerializerMethodField()
     reissued_as = serializers.SerializerMethodField()
+    fiscal_receipts = FiscalReceiptSerializer(many=True, read_only=True)
 
     class Meta(InvoiceListSerializer.Meta):
         fields = [
             *InvoiceListSerializer.Meta.fields,
             "customer_id",
+            "exchange_rate",
             "notes",
             "lines",
             "subtotal",
@@ -121,6 +124,7 @@ class InvoiceSerializer(InvoiceListSerializer):
             "from_quote",
             "recurring_id",
             "activity",
+            "fiscal_receipts",
             "created_at",
         ]
         read_only_fields = [
@@ -182,7 +186,29 @@ class InvoiceSerializer(InvoiceListSerializer):
             raise serializers.ValidationError({"due_date": "Due date can't be before issue date."})
         if "lines" in attrs and len(attrs["lines"]) > 200:
             raise serializers.ValidationError({"lines": "At most 200 lines per invoice."})
+        currency = attrs.get("currency") or (self.instance.currency if self.instance else None)
+        if currency == "ZMW":
+            attrs["exchange_rate"] = None
+        else:
+            check_rate(attrs.get("exchange_rate"))
         return attrs
+
+
+def check_rate(rate: Decimal | None) -> None:
+    if rate is not None and rate <= 0:
+        raise serializers.ValidationError({"exchange_rate": "Enter how many Kwacha make one unit."})
+
+
+class ExchangeRateSerializer(serializers.Serializer[Any]):
+    exchange_rate = serializers.DecimalField(
+        max_digits=12,
+        decimal_places=4,
+        help_text="Kwacha per 1 unit of the invoice currency, e.g. 26.85 for US$1",
+    )
+
+    def validate_exchange_rate(self, value: Decimal) -> Decimal:
+        check_rate(value)
+        return value
 
 
 class ReasonSerializer(serializers.Serializer[Any]):

@@ -11,6 +11,7 @@ from django.db import transaction
 from rest_framework.exceptions import ValidationError
 
 from apps.audit.models import ActivityLog, log
+from apps.core.i18n import t
 from apps.core.money import format_money
 from apps.core.queue import enqueue_on_commit
 from apps.invoices.models import Invoice
@@ -26,9 +27,13 @@ def first_name(name: str) -> str:
     return name.split()[0] if name.strip() else ""
 
 
+def _lang(doc: Any) -> str:
+    return getattr(doc.customer, "language", "en") or "en"
+
+
 def _greeting(doc: Any) -> str:
     name = first_name(doc.customer.name)
-    return f"Hello {name}," if name else "Hello,"
+    return t(_lang(doc), "hello_name", name=name) if name else t(_lang(doc), "hello")
 
 
 def _date(d: dt.date) -> str:
@@ -58,10 +63,15 @@ def content_for(doc: Any, kind: str) -> Content:
     if kind == Kind.QUOTE:
         total = format_money(doc.total, doc.currency)
         return Content(
-            text=(
-                f"{_greeting(doc)} here is quote {doc.number} from {b.name} for {total}, "
-                f"valid until {_date(doc.valid_until)}.\n\n"
-                f"View it and accept or decline here: {doc.public_url}"
+            text=t(
+                _lang(doc),
+                "msg_quote",
+                greeting=_greeting(doc),
+                number=doc.number,
+                business=b.name,
+                amount=total,
+                until=_date(doc.valid_until),
+                url=doc.public_url,
             ),
             params=[
                 first_name(doc.customer.name) or "there",
@@ -81,10 +91,15 @@ def content_for(doc: Any, kind: str) -> Content:
     amount = format_money(owed(doc), doc.currency)
     if kind == Kind.REMINDER:
         return Content(
-            text=(
-                f"{_greeting(doc)} this is a friendly reminder from {b.name} that invoice "
-                f"{doc.number} has {amount} outstanding. It was due on {_date(doc.due_date)}.\n\n"
-                f"View and download it here: {doc.public_url}"
+            text=t(
+                _lang(doc),
+                "msg_reminder",
+                greeting=_greeting(doc),
+                number=doc.number,
+                business=b.name,
+                amount=amount,
+                due=_date(doc.due_date),
+                url=doc.public_url,
             ),
             params=[
                 first_name(doc.customer.name) or "there",
@@ -102,9 +117,15 @@ def content_for(doc: Any, kind: str) -> Content:
             button_label="View invoice",
         )
     return Content(
-        text=(
-            f"{_greeting(doc)} here is invoice {doc.number} from {b.name} for {amount}, "
-            f"due {_date(doc.due_date)}.\n\nView and download it here: {doc.public_url}"
+        text=t(
+            _lang(doc),
+            "msg_invoice",
+            greeting=_greeting(doc),
+            number=doc.number,
+            business=b.name,
+            amount=amount,
+            due=_date(doc.due_date),
+            url=doc.public_url,
         ),
         params=[
             first_name(doc.customer.name) or "there",

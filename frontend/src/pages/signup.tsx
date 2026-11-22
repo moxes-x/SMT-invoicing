@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router";
+import { Link, useNavigate, useSearchParams } from "react-router";
 import { z } from "zod";
 
 import { useSignup } from "@/api/auth";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { applyApiErrors } from "@/lib/apply-errors";
+import { safeNext, withNext } from "@/lib/next";
 
 const schema = z.object({
   full_name: z.string().max(150).optional(),
@@ -21,16 +22,21 @@ type Values = z.infer<typeof schema>;
 
 export function SignupPage() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const next = safeNext(params);
   const signup = useSignup();
   const [formError, setFormError] = useState<string | null>(null);
-  const form = useForm<Values>({ resolver: zodResolver(schema) });
+  const form = useForm<Values>({
+    resolver: zodResolver(schema),
+    defaultValues: { email: params.get("email") ?? "" },
+  });
   const { errors, isSubmitting } = form.formState;
 
   const onSubmit = form.handleSubmit(async (values) => {
     setFormError(null);
     try {
       await signup.mutateAsync(values);
-      navigate("/onboarding");
+      navigate(next ?? "/onboarding");
     } catch (err) {
       setFormError(applyApiErrors(err, form.setError, ["full_name", "email", "password"]));
     }
@@ -77,7 +83,7 @@ export function SignupPage() {
             <p className="text-muted-foreground text-center text-sm">
               Already have an account?{" "}
               <Link
-                to="/login"
+                to={withNext("/login", next)}
                 className="text-primary font-medium underline-offset-4 hover:underline"
               >
                 Log in

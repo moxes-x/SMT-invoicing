@@ -2,6 +2,7 @@ import { Pause, Pencil, Play, Plus, Repeat, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router";
 
+import { useAccess } from "@/api/auth";
 import {
   useDeleteRecurring,
   useRecurringList,
@@ -29,6 +30,7 @@ function describeSchedule(r: Pick<Recurring, "frequency" | "interval">): string 
 }
 
 export function RecurringPage() {
+  const { canWrite } = useAccess();
   const { data, isLoading } = useRecurringList();
 
   return (
@@ -37,18 +39,22 @@ export function RecurringPage() {
         title="Repeating invoices"
         description="For rent, school fees, subscriptions: we create the invoice on each date."
         actions={
-          <Button asChild>
-            <Link to="/recurring/new">
-              <Plus /> New
-            </Link>
-          </Button>
+          canWrite && (
+            <Button asChild>
+              <Link to="/recurring/new">
+                <Plus /> New
+              </Link>
+            </Button>
+          )
         }
       />
       {!isLoading && !data?.results.length ? (
         <EmptyState icon={<Repeat />} title="No repeating invoices yet">
-          <Button asChild>
-            <Link to="/recurring/new">Set one up</Link>
-          </Button>
+          {canWrite && (
+            <Button asChild>
+              <Link to="/recurring/new">Set one up</Link>
+            </Button>
+          )}
         </EmptyState>
       ) : (
         data?.results.map((r) => <ScheduleCard key={r.id} schedule={r} />)
@@ -60,6 +66,7 @@ export function RecurringPage() {
 function ScheduleCard({ schedule: r }: { schedule: Recurring }) {
   const save = useSaveRecurring();
   const remove = useDeleteRecurring();
+  const { canWrite, canManage } = useAccess();
   const [error, setError] = useState<string | null>(null);
   const finished = !!r.end_date && r.next_run_date > r.end_date;
   const active = (r.is_active ?? true) && !finished;
@@ -108,29 +115,33 @@ function ScheduleCard({ schedule: r }: { schedule: Recurring }) {
           {r.end_date && ` · ends ${formatDate(r.end_date)}`}
         </p>
         <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline" size="sm">
-            <Link to={`/recurring/${r.id}/edit`}>
-              <Pencil /> Edit
-            </Link>
-          </Button>
-          {!finished && (
+          {canWrite && (
+            <Button asChild variant="outline" size="sm">
+              <Link to={`/recurring/${r.id}/edit`}>
+                <Pencil /> Edit
+              </Link>
+            </Button>
+          )}
+          {canWrite && !finished && (
             <Button variant="outline" size="sm" onClick={toggle} disabled={save.isPending}>
               {active ? <Pause /> : <Play />} {active ? "Pause" : "Resume"}
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-destructive"
-            disabled={remove.isPending}
-            onClick={() => {
-              if (window.confirm("Delete this schedule? Invoices already created stay.")) {
-                remove.mutate(r.id);
-              }
-            }}
-          >
-            <Trash2 /> Delete
-          </Button>
+          {canManage && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive"
+              disabled={remove.isPending}
+              onClick={() => {
+                if (window.confirm("Delete this schedule? Invoices already created stay.")) {
+                  remove.mutate(r.id);
+                }
+              }}
+            >
+              <Trash2 /> Delete
+            </Button>
+          )}
         </div>
         {error && <ErrorNote>{error}</ErrorNote>}
       </CardContent>

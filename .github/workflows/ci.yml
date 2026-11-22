@@ -75,12 +75,15 @@ jobs:
       - name: Start fake Lenco
         working-directory: e2e
         run: node fake-lenco.mjs &
+      - name: Start fake ZRA VSDC
+        working-directory: e2e
+        run: node fake-vsdc.mjs &
       - name: Start backend
         working-directory: backend
         run: |
           uv sync --frozen
           uv run python manage.py migrate
-          DEBUG=1 LENCO_SANDBOX_API_URL=http://localhost:8090/access/v2 uv run python manage.py runserver 8000 &
+          DEBUG=1 AUTH_THROTTLE_RATE=1000/min LENCO_SANDBOX_API_URL=http://localhost:8090/access/v2 uv run python manage.py runserver 8000 &
       - name: Start frontend
         working-directory: frontend
         run: |

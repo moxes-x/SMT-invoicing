@@ -39,7 +39,7 @@ class TestBusinessOnboarding:
         assert set(res.json()) >= {"phone", "tpin"}
 
     def test_member_role_cannot_edit_business(self, api_client, owner_a):
-        member = MembershipFactory(business=owner_a.business, role=Membership.Role.MEMBER)
+        member = MembershipFactory(business=owner_a.business, role=Membership.Role.STAFF)
         api_client.force_login(member.user)
         res = api_client.patch(
             f"/api/businesses/{owner_a.business.id}/", {"name": "Hijacked"}, format="json"

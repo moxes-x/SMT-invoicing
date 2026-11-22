@@ -1,5 +1,6 @@
 import type { DisplayStatus, QuoteDisplayStatus } from "@/api/resources";
 import { Badge } from "@/components/ui/badge";
+import { useT } from "@/i18n";
 
 type Tone = "neutral" | "info" | "success" | "warning" | "danger" | "brand";
 
@@ -19,9 +20,10 @@ const STATUS: Record<DisplayStatus | QuoteDisplayStatus, { label: string; tone: 
 
 export function StatusBadge({ status }: { status: DisplayStatus | QuoteDisplayStatus }) {
   const s = STATUS[status];
+  const t = useT();
   return (
     <Badge tone={s.tone} className={status === "void" ? "line-through" : undefined}>
-      {s.label}
+      {t(`status.${status}`)}
     </Badge>
   );
 }

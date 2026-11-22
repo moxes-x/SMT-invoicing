@@ -22,9 +22,14 @@
   --border: oklch(0.91 0 0);
   --input: oklch(0.91 0 0);
   --ring: oklch(0.51 0.1 185);
+  /* Report series, checked for colour-blind separation against the card surface. */
+  --series-invoiced: #008a7c;
+  --series-collected: #eb6834;
 }
 
 .dark {
+  --series-invoiced: #1aa595;
+  --series-collected: #d95926;
   --background: oklch(0.16 0.01 260);
   --foreground: oklch(0.97 0 0);
   --card: oklch(0.2 0.01 260);
@@ -49,6 +54,8 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --color-series-invoiced: var(--series-invoiced);
+  --color-series-collected: var(--series-collected);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

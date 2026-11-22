@@ -17,7 +17,7 @@ export function ExportsPage() {
     <div className="grid gap-4">
       <PageHeader
         title="Export"
-        description="Spreadsheet (CSV) files for your accountant or your own records. Amounts are in Kwacha, e.g. 1250.00."
+        description="Spreadsheet (CSV) files for your accountant or your own records. Amounts are in each invoice's currency, e.g. 1250.00, with a currency column."
       />
       <Card>
         <CardHeader>

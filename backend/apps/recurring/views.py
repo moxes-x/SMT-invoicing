@@ -12,6 +12,7 @@ class RecurringInvoiceViewSet(BusinessScopedMixin, viewsets.ModelViewSet[Recurri
     queryset = RecurringInvoice.objects.select_related("customer")
     serializer_class = RecurringInvoiceSerializer
     permission_classes = [HasBusiness]
+    manager_actions = ("destroy",)
     lookup_value_regex = r"\d+"
 
     def perform_create(self, serializer: RecurringInvoiceSerializer) -> None:  # type: ignore[override]

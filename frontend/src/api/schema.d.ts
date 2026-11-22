@@ -21,6 +21,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/invites/{token}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Shown on the join page before signing up or logging in. */
+        get: operations["auth_invites_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/invites/{token}/accept/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["auth_invites_accept_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/login/": {
         parameters: {
             query?: never;
@@ -66,7 +99,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch?: never;
+        /** @description Change your own name or app language. */
+        patch: operations["auth_me_partial_update"];
         trace?: never;
     };
     "/api/auth/signup/": {
@@ -367,6 +401,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/invoices/{id}/exchange-rate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Set the Kwacha rate of a foreign-currency invoice, also after sending (for reports). */
+        post: operations["invoices_exchange_rate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/invoices/{id}/payments/": {
         parameters: {
             query?: never;
@@ -510,7 +561,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The invoice list as CSV (same filters as the list; amounts in Kwacha). */
+        /**
+         * @description The invoice list as CSV (same filters as the list), in each invoice's currency.
+         *
+         *     Foreign-currency invoices also get their Kwacha rate and total, when a rate is set.
+         */
         get: operations["invoices_export_retrieve"];
         put?: never;
         post?: never;
@@ -880,6 +935,139 @@ export interface paths {
         patch: operations["recurring_partial_update"];
         trace?: never;
     };
+    "/api/reports/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Invoiced and collected in a date range (default: this month), and owed right now. */
+        get: operations["reports_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reports/export/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Month by month, per currency, with the Kwacha totals: for the accountant's spreadsheet. */
+        get: operations["reports_export_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/team/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["team_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/team/invites/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["team_invites_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/team/invites/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["team_invites_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/team/members/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["team_members_destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["team_members_partial_update"];
+        trace?: never;
+    };
+    "/api/zra/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The business's ZRA Smart Invoice (VSDC) settings. */
+        get: operations["zra_retrieve"];
+        /** @description The business's ZRA Smart Invoice (VSDC) settings. */
+        put: operations["zra_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/zra/test/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Initialise the device on the VSDC (selectInitInfo) and keep its SDC ID and MRC number. */
+        post: operations["zra_test_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -896,6 +1084,18 @@ export interface components {
             verb: components["schemas"]["VerbEnum"];
             message: string;
         };
+        Aging: {
+            amount: number;
+            count: number;
+            bucket: string;
+            name: string;
+        };
+        Amount: {
+            amount: number;
+            count: number;
+        };
+        /** @enum {unknown} */
+        BlankEnum: "";
         Business: {
             readonly id: number;
             name: string;
@@ -951,13 +1151,34 @@ export interface components {
          * @enum {string}
          */
         CurrencyEnum: "ZMW" | "USD";
+        CurrencyReport: {
+            currency: string;
+            invoiced: components["schemas"]["Amount"];
+            collected: components["schemas"]["Amount"];
+            outstanding: components["schemas"]["Amount"];
+            overdue: components["schemas"]["Amount"];
+            by_method: components["schemas"]["Method"][];
+            aging: components["schemas"]["Aging"][];
+            months: components["schemas"]["Month"][];
+            top_customers: components["schemas"]["TopCustomer"][];
+        };
         Customer: {
             readonly id: number;
             name: string;
             phone?: string;
             email?: string;
             address?: string;
+            /** @description The customer's TPIN, printed on ZRA tax invoices (for business customers). */
+            tpin?: string;
             notes?: string;
+            /**
+             * @description Language of the messages and pages this customer gets
+             *
+             *     * `en` - English
+             *     * `bem` - Icibemba (Bemba)
+             *     * `ny` - Chinyanja (Nyanja)
+             */
+            language?: components["schemas"]["LanguageEnum"];
             /** Format: date-time */
             readonly created_at: string;
         };
@@ -966,7 +1187,17 @@ export interface components {
             phone?: string;
             email?: string;
             address?: string;
+            /** @description The customer's TPIN, printed on ZRA tax invoices (for business customers). */
+            tpin?: string;
             notes?: string;
+            /**
+             * @description Language of the messages and pages this customer gets
+             *
+             *     * `en` - English
+             *     * `bem` - Icibemba (Bemba)
+             *     * `ny` - Chinyanja (Nyanja)
+             */
+            language?: components["schemas"]["LanguageEnum"];
         };
         CustomerSummary: {
             readonly id: number;
@@ -974,12 +1205,28 @@ export interface components {
             /** @description E.164, WhatsApp */
             phone?: string;
             email?: string;
+            /**
+             * @description Language of the messages and pages this customer gets
+             *
+             *     * `en` - English
+             *     * `bem` - Icibemba (Bemba)
+             *     * `ny` - Chinyanja (Nyanja)
+             */
+            language?: components["schemas"]["LanguageEnum"];
         };
         CustomerSummaryRequest: {
             name: string;
             /** @description E.164, WhatsApp */
             phone?: string;
             email?: string;
+            /**
+             * @description Language of the messages and pages this customer gets
+             *
+             *     * `en` - English
+             *     * `bem` - Icibemba (Bemba)
+             *     * `ny` - Chinyanja (Nyanja)
+             */
+            language?: components["schemas"]["LanguageEnum"];
         };
         Dashboard: {
             owed: components["schemas"]["MoneyByCurrency"][];
@@ -1044,6 +1291,40 @@ export interface components {
          * @enum {string}
          */
         EnvironmentEnum: "sandbox" | "live";
+        ExchangeRateRequest: {
+            /**
+             * Format: decimal
+             * @description Kwacha per 1 unit of the invoice currency, e.g. 26.85 for US$1
+             */
+            exchange_rate: string;
+        };
+        FiscalReceipt: {
+            readonly id: number;
+            readonly kind: components["schemas"]["FiscalReceiptKindEnum"];
+            /** @description Our number sent as cisInvcNo (the invoice or credit note number) */
+            readonly document_number: string;
+            readonly receipt_no: string;
+            readonly sdc_id: string;
+            readonly mrc_no: string;
+            readonly internal_data: string;
+            readonly signature: string;
+            /** Format: uri */
+            readonly qr_url: string;
+            /** @description As the VSDC sent it */
+            readonly signed_at: string;
+            /** Format: decimal */
+            readonly taxable_total: string;
+            /** Format: decimal */
+            readonly tax_total: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `sale` - Tax invoice
+         *     * `credit` - Credit note
+         * @enum {string}
+         */
+        FiscalReceiptKindEnum: "sale" | "credit";
         /**
          * @description * `weekly` - Weekly
          *     * `monthly` - Monthly
@@ -1053,6 +1334,33 @@ export interface components {
         Health: {
             status: string;
             database: string;
+        };
+        Invite: {
+            readonly id: number;
+            /** Format: email */
+            email: string;
+            role: components["schemas"]["RoleEnum"];
+            /** @default  */
+            readonly invited_by: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly expires_at: string;
+            /** @description Share it on WhatsApp if email is slow. */
+            readonly link: string;
+        };
+        InviteInfo: {
+            business: string;
+            /** Format: email */
+            email: string;
+            role: string;
+            invited_by: string;
+            is_open: boolean;
+        };
+        InviteRequest: {
+            /** Format: email */
+            email: string;
+            role: components["schemas"]["RoleEnum"];
         };
         Invoice: {
             readonly id: number;
@@ -1069,6 +1377,11 @@ export interface components {
             readonly total: number;
             readonly amount_paid: number;
             readonly balance: number;
+            /**
+             * Format: decimal
+             * @description Kwacha per 1 unit of the invoice currency on the issue date (not for ZMW).
+             */
+            exchange_rate?: string | null;
             notes?: string;
             lines: components["schemas"]["InvoiceLine"][];
             readonly subtotal: number;
@@ -1092,6 +1405,7 @@ export interface components {
             readonly from_quote: components["schemas"]["InvoiceRef"] | null;
             readonly recurring_id: number | null;
             readonly activity: components["schemas"]["ActivityLog"][];
+            readonly fiscal_receipts: components["schemas"]["FiscalReceipt"][];
             /** Format: date-time */
             readonly created_at: string;
         };
@@ -1169,6 +1483,11 @@ export interface components {
             /** Format: date */
             due_date: string;
             customer_id: number;
+            /**
+             * Format: decimal
+             * @description Kwacha per 1 unit of the invoice currency on the issue date (not for ZMW).
+             */
+            exchange_rate?: string | null;
             notes?: string;
             lines: components["schemas"]["InvoiceLineRequest"][];
         };
@@ -1188,6 +1507,16 @@ export interface components {
              * @description Minor units (ngwee).
              */
             unit_price: number;
+            /**
+             * @description ZRA VAT category. Blank uses the business default (only for ZRA tax invoices).
+             *
+             *     * `A` - Standard rated (16%)
+             *     * `C1` - Exports (0%)
+             *     * `C2` - Zero-rated by LPO (0%)
+             *     * `C3` - Zero-rated by nature (0%)
+             *     * `D` - Exempt
+             */
+            vat_category?: components["schemas"]["VatCategoryEnum"] | components["schemas"]["BlankEnum"];
             is_active?: boolean;
             /** Format: date-time */
             readonly created_at: string;
@@ -1200,8 +1529,40 @@ export interface components {
              * @description Minor units (ngwee).
              */
             unit_price: number;
+            /**
+             * @description ZRA VAT category. Blank uses the business default (only for ZRA tax invoices).
+             *
+             *     * `A` - Standard rated (16%)
+             *     * `C1` - Exports (0%)
+             *     * `C2` - Zero-rated by LPO (0%)
+             *     * `C3` - Zero-rated by nature (0%)
+             *     * `D` - Exempt
+             */
+            vat_category?: components["schemas"]["VatCategoryEnum"] | components["schemas"]["BlankEnum"];
             is_active?: boolean;
         };
+        /**
+         * @description * `2` - Goods (finished products)
+         *     * `3` - Services (no stock)
+         * @enum {string}
+         */
+        ItemTypeEnum: "2" | "3";
+        Kwacha: {
+            invoiced: number;
+            collected: number;
+            outstanding: number;
+            overdue: number;
+            months: components["schemas"]["Month"][];
+            /** @description Foreign-currency invoices left out because they have no exchange rate */
+            missing_rates: number;
+        };
+        /**
+         * @description * `en` - English
+         *     * `bem` - Icibemba (Bemba)
+         *     * `ny` - Chinyanja (Nyanja)
+         * @enum {string}
+         */
+        LanguageEnum: "en" | "bem" | "ny";
         LencoAccount: {
             enabled?: boolean;
             environment?: components["schemas"]["EnvironmentEnum"];
@@ -1227,6 +1588,12 @@ export interface components {
             current_business: components["schemas"]["Business"] | null;
             businesses: components["schemas"]["Business"][];
         };
+        Method: {
+            amount: number;
+            count: number;
+            method: string;
+            name: string;
+        };
         /**
          * @description * `cash` - Cash
          *     * `mtn_momo` - MTN MoMo
@@ -1242,6 +1609,12 @@ export interface components {
             currency: string;
             amount: number;
             count: number;
+        };
+        Month: {
+            /** @description YYYY-MM */
+            month: string;
+            invoiced: number;
+            collected: number;
         };
         PaginatedBusinessList: {
             /** @example 123 */
@@ -1368,7 +1741,17 @@ export interface components {
             phone?: string;
             email?: string;
             address?: string;
+            /** @description The customer's TPIN, printed on ZRA tax invoices (for business customers). */
+            tpin?: string;
             notes?: string;
+            /**
+             * @description Language of the messages and pages this customer gets
+             *
+             *     * `en` - English
+             *     * `bem` - Icibemba (Bemba)
+             *     * `ny` - Chinyanja (Nyanja)
+             */
+            language?: components["schemas"]["LanguageEnum"];
         };
         PatchedInvoiceRequest: {
             currency?: components["schemas"]["CurrencyEnum"];
@@ -1377,6 +1760,11 @@ export interface components {
             /** Format: date */
             due_date?: string;
             customer_id?: number;
+            /**
+             * Format: decimal
+             * @description Kwacha per 1 unit of the invoice currency on the issue date (not for ZMW).
+             */
+            exchange_rate?: string | null;
             notes?: string;
             lines?: components["schemas"]["InvoiceLineRequest"][];
         };
@@ -1388,6 +1776,16 @@ export interface components {
              * @description Minor units (ngwee).
              */
             unit_price?: number;
+            /**
+             * @description ZRA VAT category. Blank uses the business default (only for ZRA tax invoices).
+             *
+             *     * `A` - Standard rated (16%)
+             *     * `C1` - Exports (0%)
+             *     * `C2` - Zero-rated by LPO (0%)
+             *     * `C3` - Zero-rated by nature (0%)
+             *     * `D` - Exempt
+             */
+            vat_category?: components["schemas"]["VatCategoryEnum"] | components["schemas"]["BlankEnum"];
             is_active?: boolean;
         };
         PatchedQuoteRequest: {
@@ -1414,6 +1812,20 @@ export interface components {
             lines?: components["schemas"]["RecurringLineRequest"][];
             send_mode?: components["schemas"]["SendModeEnum"];
             is_active?: boolean;
+        };
+        PatchedRoleRequest: {
+            role?: components["schemas"]["RoleEnum"];
+        };
+        PatchedUserRequest: {
+            full_name?: string;
+            /**
+             * @description App language
+             *
+             *     * `en` - English
+             *     * `bem` - Icibemba (Bemba)
+             *     * `ny` - Chinyanja (Nyanja)
+             */
+            language?: components["schemas"]["LanguageEnum"];
         };
         Payment: {
             readonly id: number;
@@ -1453,6 +1865,18 @@ export interface components {
          * @enum {string}
          */
         PaymentStatusEnum: "unpaid" | "partial" | "paid";
+        /**
+         * @description * `01` - Cash
+         *     * `02` - Credit (paid later)
+         *     * `03` - Cash/credit
+         *     * `04` - Bank cheque
+         *     * `05` - Card
+         *     * `06` - Mobile money
+         *     * `07` - Other
+         *     * `08` - Bank transfer
+         * @enum {string}
+         */
+        PaymentTypeEnum: "01" | "02" | "03" | "04" | "05" | "06" | "07" | 8;
         Quote: {
             readonly id: number;
             readonly number: string;
@@ -1638,9 +2062,31 @@ export interface components {
         RemindersPausedRequest: {
             paused: boolean;
         };
+        Report: {
+            /** Format: date */
+            start: string;
+            /** Format: date */
+            end: string;
+            /**
+             * Format: date
+             * @description Outstanding and overdue are as of this day
+             */
+            as_of: string;
+            currencies: components["schemas"]["CurrencyReport"][];
+            /** @description Everything in Kwacha at each invoice's own rate */
+            kwacha: components["schemas"]["Kwacha"];
+        };
         RespondRequest: {
             accepted: boolean;
         };
+        /**
+         * @description * `owner` - Owner
+         *     * `admin` - Admin
+         *     * `staff` - Staff
+         *     * `accountant` - Accountant
+         * @enum {string}
+         */
+        RoleEnum: "owner" | "admin" | "staff" | "accountant";
         /**
          * @description * `draft` - Create a draft for me to review
          *     * `email` - Send automatically by email
@@ -1715,12 +2161,49 @@ export interface components {
          * @enum {string}
          */
         StatementRowKindEnum: "invoice" | "payment";
+        Team: {
+            members: components["schemas"]["TeamMember"][];
+            invites: components["schemas"]["Invite"][];
+        };
+        TeamMember: {
+            readonly id: number;
+            /** Format: email */
+            readonly email: string;
+            readonly full_name: string;
+            role?: components["schemas"]["RoleEnum"];
+            readonly is_you: boolean;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        TopCustomer: {
+            customer_id: number;
+            name: string;
+            invoiced: number;
+            count: number;
+        };
         User: {
             readonly id: number;
             /** Format: email */
             readonly email: string;
             full_name?: string;
+            /**
+             * @description App language
+             *
+             *     * `en` - English
+             *     * `bem` - Icibemba (Bemba)
+             *     * `ny` - Chinyanja (Nyanja)
+             */
+            language?: components["schemas"]["LanguageEnum"];
         };
+        /**
+         * @description * `A` - Standard rated (16%)
+         *     * `C1` - Exports (0%)
+         *     * `C2` - Zero-rated by LPO (0%)
+         *     * `C3` - Zero-rated by nature (0%)
+         *     * `D` - Exempt
+         * @enum {string}
+         */
+        VatCategoryEnum: "A" | "C1" | "C2" | "C3" | "D";
         /**
          * @description * `created` - Created
          *     * `updated` - Updated
@@ -1751,6 +2234,69 @@ export interface components {
             url: string;
             message: string;
         };
+        ZraDevice: {
+            /** @description Report every sent invoice to ZRA and issue it as a tax invoice. */
+            enabled?: boolean;
+            /**
+             * VSDC address
+             * Format: uri
+             * @description Where your ZRA VSDC runs, e.g. http://10.0.0.5:8080/zrasandboxvsdc
+             */
+            vsdc_url?: string;
+            /** Branch ID (bhfId) */
+            branch_id?: string;
+            /** Device serial (dvcSrlNo) */
+            device_serial?: string;
+            /**
+             * Item classification code
+             * @description ZRA item class code used for your items (from ZRA's code list).
+             */
+            item_class_code?: string;
+            /**
+             * @description ZRA product type for your items. Goods also need stock reports to ZRA.
+             *
+             *     * `2` - Goods (finished products)
+             *     * `3` - Services (no stock)
+             */
+            item_type?: components["schemas"]["ItemTypeEnum"];
+            default_vat_category?: components["schemas"]["VatCategoryEnum"];
+            payment_type?: components["schemas"]["PaymentTypeEnum"];
+            readonly sdc_id: string;
+            readonly mrc_no: string;
+            /** Format: date-time */
+            readonly initialized_at: string | null;
+            readonly vat_registered: boolean;
+            readonly tpin: string;
+            readonly is_ready: boolean;
+        };
+        ZraDeviceRequest: {
+            /** @description Report every sent invoice to ZRA and issue it as a tax invoice. */
+            enabled?: boolean;
+            /**
+             * VSDC address
+             * Format: uri
+             * @description Where your ZRA VSDC runs, e.g. http://10.0.0.5:8080/zrasandboxvsdc
+             */
+            vsdc_url?: string;
+            /** Branch ID (bhfId) */
+            branch_id?: string;
+            /** Device serial (dvcSrlNo) */
+            device_serial?: string;
+            /**
+             * Item classification code
+             * @description ZRA item class code used for your items (from ZRA's code list).
+             */
+            item_class_code?: string;
+            /**
+             * @description ZRA product type for your items. Goods also need stock reports to ZRA.
+             *
+             *     * `2` - Goods (finished products)
+             *     * `3` - Services (no stock)
+             */
+            item_type?: components["schemas"]["ItemTypeEnum"];
+            default_vat_category?: components["schemas"]["VatCategoryEnum"];
+            payment_type?: components["schemas"]["PaymentTypeEnum"];
+        };
     };
     responses: never;
     parameters: never;
@@ -1765,6 +2311,47 @@ export interface operations {
             query?: never;
             header?: never;
             path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    auth_invites_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteInfo"];
+                };
+            };
+        };
+    };
+    auth_invites_accept_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -1829,6 +2416,31 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+        };
+    };
+    auth_me_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedUserRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedUserRequest"];
+                "multipart/form-data": components["schemas"]["PatchedUserRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -2469,6 +3081,36 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Delivery"];
+                };
+            };
+        };
+    };
+    invoices_exchange_rate_create: {
+        parameters: {
+            query?: {
+                customer?: number;
+                status?: "draft" | "overdue" | "paid" | "partial" | "sent" | "unpaid" | "void";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExchangeRateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ExchangeRateRequest"];
+                "multipart/form-data": components["schemas"]["ExchangeRateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
                 };
             };
         };
@@ -3423,6 +4065,228 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RecurringInvoice"];
+                };
+            };
+        };
+    };
+    reports_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Up to this date (inclusive) */
+                end?: string;
+                /** @description From this date (inclusive) */
+                start?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Report"];
+                };
+            };
+        };
+    };
+    reports_export_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Up to this date (inclusive) */
+                end?: string;
+                /** @description From this date (inclusive) */
+                start?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+        };
+    };
+    team_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Team"];
+                };
+            };
+        };
+    };
+    team_invites_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["InviteRequest"];
+                "multipart/form-data": components["schemas"]["InviteRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Team"];
+                };
+            };
+        };
+    };
+    team_invites_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    team_members_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    team_members_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedRoleRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedRoleRequest"];
+                "multipart/form-data": components["schemas"]["PatchedRoleRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Team"];
+                };
+            };
+        };
+    };
+    zra_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZraDevice"];
+                };
+            };
+        };
+    };
+    zra_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ZraDeviceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ZraDeviceRequest"];
+                "multipart/form-data": components["schemas"]["ZraDeviceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ZraDevice"];
+                };
+            };
+        };
+    };
+    zra_test_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionTest"];
                 };
             };
         };

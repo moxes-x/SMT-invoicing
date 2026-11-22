@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-import { useDeleteItem, useItems, useSaveItem, type Item } from "@/api/resources";
+import { useAccess, useMe } from "@/api/auth";
+import { useDeleteItem, useItems, useSaveItem, VAT_CATEGORIES, type Item } from "@/api/resources";
 import { FormField } from "@/components/form-field";
 import { MoneyInput } from "@/components/money-input";
 import { EmptyState, ErrorNote, PageHeader } from "@/components/page";
@@ -13,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { applyApiErrors } from "@/lib/apply-errors";
 import { formatMoney, parseMoney, toMoneyInput } from "@/lib/money";
 
@@ -21,12 +23,16 @@ const schema = z.object({
   description: z.string().optional(),
   price: z.string().refine((v) => parseMoney(v) !== null, "Enter a price like 150.00"),
   is_active: z.boolean(),
+  vat_category: z.enum(["", "A", "C1", "C2", "C3", "D"]),
 });
 type Values = z.infer<typeof schema>;
 
 function ItemForm({ item, onDone }: { item?: Item; onDone: () => void }) {
   const save = useSaveItem();
   const remove = useDeleteItem();
+  const { canManage } = useAccess();
+  const { data: me } = useMe();
+  const vatRegistered = me?.current_business?.vat_registered ?? false;
   const [formError, setFormError] = useState<string | null>(null);
   const form = useForm<Values>({
     resolver: zodResolver(schema),
@@ -35,6 +41,7 @@ function ItemForm({ item, onDone }: { item?: Item; onDone: () => void }) {
       description: item?.description ?? "",
       price: item ? toMoneyInput(item.unit_price) : "",
       is_active: item?.is_active ?? true,
+      vat_category: item?.vat_category ?? "",
     },
   });
   const { errors, isSubmitting } = form.formState;
@@ -60,13 +67,25 @@ function ItemForm({ item, onDone }: { item?: Item; onDone: () => void }) {
       <FormField id="i-desc" label="Description (optional)">
         <Input id="i-desc" {...form.register("description")} />
       </FormField>
+      {(vatRegistered || item?.vat_category) && (
+        <FormField id="i-vat" label="VAT category" hint="Used on ZRA tax invoices.">
+          <Select id="i-vat" {...form.register("vat_category")}>
+            <option value="">Your usual category</option>
+            {VAT_CATEGORIES.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </Select>
+        </FormField>
+      )}
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" className="accent-primary size-4" {...form.register("is_active")} />
         Show when creating invoices
       </label>
       {formError && <ErrorNote>{formError}</ErrorNote>}
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
-        {item ? (
+        {item && canManage ? (
           <Button
             type="button"
             variant="ghost"
@@ -93,6 +112,7 @@ function ItemForm({ item, onDone }: { item?: Item; onDone: () => void }) {
 export function ItemsPage() {
   const [editing, setEditing] = useState<Item | "new" | null>(null);
   const { data, isLoading } = useItems();
+  const { canWrite } = useAccess();
 
   return (
     <div className="grid gap-4">
@@ -100,14 +120,16 @@ export function ItemsPage() {
         title="Items"
         description="Products and services you sell often. They fill in invoice lines for you."
         actions={
-          <Button onClick={() => setEditing("new")}>
-            <Plus /> Add
-          </Button>
+          canWrite && (
+            <Button onClick={() => setEditing("new")}>
+              <Plus /> Add
+            </Button>
+          )
         }
       />
       {!isLoading && !data?.results.length ? (
         <EmptyState icon={<Package />} title="No saved items yet">
-          <Button onClick={() => setEditing("new")}>Add an item</Button>
+          {canWrite && <Button onClick={() => setEditing("new")}>Add an item</Button>}
         </EmptyState>
       ) : (
         <Card className="gap-0 py-0">
@@ -116,6 +138,7 @@ export function ItemsPage() {
               <li key={item.id}>
                 <button
                   type="button"
+                  disabled={!canWrite}
                   onClick={() => setEditing(item)}
                   className="hover:bg-muted/50 flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
                 >

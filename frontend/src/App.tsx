@@ -1,4 +1,10 @@
-import { createBrowserRouter, Navigate, Outlet, RouterProvider } from "react-router";
+import {
+  createBrowserRouter,
+  Navigate,
+  Outlet,
+  RouterProvider,
+  useSearchParams,
+} from "react-router";
 
 import { useMe } from "@/api/auth";
 import { AppLayout } from "@/components/app-layout";
@@ -9,6 +15,7 @@ import { InvoiceDetailPage } from "@/pages/invoice-detail";
 import { InvoiceEditorPage } from "@/pages/invoice-editor";
 import { InvoicesPage } from "@/pages/invoices";
 import { ItemsPage } from "@/pages/items";
+import { JoinPage } from "@/pages/join";
 import { LoginPage } from "@/pages/login";
 import { MorePage } from "@/pages/more";
 import { OnboardingPage } from "@/pages/onboarding";
@@ -16,10 +23,13 @@ import { QuoteDetailPage } from "@/pages/quote-detail";
 import { QuoteEditorPage } from "@/pages/quote-editor";
 import { QuotesPage } from "@/pages/quotes";
 import { RecurringPage } from "@/pages/recurring";
+import { ReportsPage } from "@/pages/reports";
 import { RecurringEditorPage } from "@/pages/recurring-editor";
 import { SettingsPage } from "@/pages/settings";
 import { SignupPage } from "@/pages/signup";
 import { StatementPage } from "@/pages/statement";
+import { TeamPage } from "@/pages/team";
+import { safeNext } from "@/lib/next";
 import { Providers } from "@/providers";
 
 function FullPageSpinner() {
@@ -41,8 +51,9 @@ function RequireAuth({ needsBusiness = true }: { needsBusiness?: boolean }) {
 
 function GuestOnly() {
   const { data: me, isLoading } = useMe();
+  const [params] = useSearchParams();
   if (isLoading) return <FullPageSpinner />;
-  if (me) return <Navigate to="/" replace />;
+  if (me) return <Navigate to={safeNext(params) ?? "/"} replace />;
   return <Outlet />;
 }
 
@@ -54,6 +65,8 @@ const routes = [
       { path: "/signup", element: <SignupPage /> },
     ],
   },
+  // Invite links work logged out too: the page offers sign up / log in and comes back.
+  { path: "/join/:token", element: <JoinPage /> },
   {
     element: <RequireAuth needsBusiness={false} />,
     children: [{ path: "/onboarding", element: <OnboardingPage /> }],
@@ -79,8 +92,10 @@ const routes = [
           { path: "/customers", element: <CustomersPage /> },
           { path: "/customers/:id/statement", element: <StatementPage /> },
           { path: "/exports", element: <ExportsPage /> },
+          { path: "/reports", element: <ReportsPage /> },
           { path: "/items", element: <ItemsPage /> },
           { path: "/settings", element: <SettingsPage /> },
+          { path: "/team", element: <TeamPage /> },
           { path: "/more", element: <MorePage /> },
         ],
       },

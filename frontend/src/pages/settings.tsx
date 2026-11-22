@@ -7,6 +7,7 @@ import { useMe } from "@/api/auth";
 import { useAppConfig, useUpdateBusiness } from "@/api/resources";
 import { FormField } from "@/components/form-field";
 import { OnlinePaymentsCard } from "@/components/online-payments-card";
+import { ZraCard } from "@/components/zra-card";
 import { ErrorNote, PageHeader } from "@/components/page";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,6 +54,7 @@ export function SettingsPage() {
     <div className="grid grid-cols-1 gap-4">
       <BusinessForm key={business.id} />
       <OnlinePaymentsCard key={`lenco-${business.id}`} canEdit={canEdit} />
+      <ZraCard key={`zra-${business.id}`} canEdit={canEdit} />
     </div>
   );
 }

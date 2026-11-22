@@ -1,6 +1,7 @@
 import { Download, FilePlus2, FileText, Search, X } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
 
+import { useAccess } from "@/api/auth";
 import { qs, useCustomer, useInvoices } from "@/api/resources";
 import { EmptyState, PageHeader } from "@/components/page";
 import { StatusBadge } from "@/components/status-badge";
@@ -10,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { formatDate } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n";
 
 const FILTERS = [
   { value: "", label: "All" },
@@ -22,6 +24,8 @@ const FILTERS = [
 ];
 
 export function InvoicesPage() {
+  const { canWrite } = useAccess();
+  const t = useT();
   const [params, setParams] = useSearchParams();
   const status = params.get("status") ?? "";
   const search = params.get("search") ?? "";
@@ -39,7 +43,7 @@ export function InvoicesPage() {
   return (
     <div className="grid gap-4">
       <PageHeader
-        title="Invoices"
+        title={t("nav.invoices")}
         actions={
           <>
             <Button asChild variant="outline" size="icon" aria-label="Export these invoices (CSV)">
@@ -47,11 +51,13 @@ export function InvoicesPage() {
                 <Download />
               </a>
             </Button>
-            <Button asChild>
-              <Link to={customerId ? `/invoices/new?customer=${customerId}` : "/invoices/new"}>
-                <FilePlus2 /> New
-              </Link>
-            </Button>
+            {canWrite && (
+              <Button asChild>
+                <Link to={customerId ? `/invoices/new?customer=${customerId}` : "/invoices/new"}>
+                  <FilePlus2 /> {t("action.new")}
+                </Link>
+              </Button>
+            )}
           </>
         }
       />
@@ -94,7 +100,7 @@ export function InvoicesPage() {
 
       {!isLoading && !data?.results.length ? (
         <EmptyState icon={<FileText />} title="No invoices here">
-          {!status && !search && (
+          {canWrite && !status && !search && (
             <Button asChild>
               <Link to="/invoices/new">Create an invoice</Link>
             </Button>

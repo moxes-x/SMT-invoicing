@@ -17,7 +17,13 @@ from rest_framework.views import APIView
 
 from .middleware import SESSION_KEY, get_current_business
 from .models import Business, Membership, User
-from .serializers import BusinessSerializer, LoginSerializer, MeSerializer, SignupSerializer
+from .serializers import (
+    BusinessSerializer,
+    LoginSerializer,
+    MeSerializer,
+    SignupSerializer,
+    UserSerializer,
+)
 
 
 def me_payload(request: Request, user: User | None = None) -> dict[str, Any]:
@@ -91,6 +97,14 @@ class MeView(APIView):
 
     @extend_schema(responses=MeSerializer)
     def get(self, request: Request) -> Response:
+        return Response(me_payload(request))
+
+    @extend_schema(request=UserSerializer, responses=MeSerializer)
+    def patch(self, request: Request) -> Response:
+        """Change your own name or app language."""
+        ser = UserSerializer(cast(User, request.user), data=request.data, partial=True)
+        ser.is_valid(raise_exception=True)
+        ser.save()
         return Response(me_payload(request))
 
 

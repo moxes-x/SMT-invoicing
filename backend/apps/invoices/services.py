@@ -13,7 +13,7 @@ from rest_framework.exceptions import ValidationError
 
 from apps.accounts.models import Business
 from apps.audit.models import ActivityLog, log
-from apps.core.money import format_money, invoice_totals
+from apps.core.money import format_money, format_rate, invoice_totals
 from apps.core.queue import enqueue_on_commit
 
 from .models import Invoice, InvoiceSequence
@@ -129,6 +129,9 @@ def send_invoice(invoice: Invoice, user: Any) -> Invoice:
         raise ValidationError({"detail": "Add at least one line before sending."})
     if invoice.total <= 0:
         raise ValidationError({"detail": "The invoice total must be more than zero."})
+    from apps.fiscal.services import fiscalise
+
+    fiscalise(invoice)  # VAT-registered businesses on ZRA Smart Invoice; raises if ZRA says no
     invoice.status = Invoice.Status.SENT
     invoice.sent_at = timezone.now()
     invoice.save(update_fields=["status", "sent_at", "updated_at"])
@@ -152,6 +155,9 @@ def void_invoice(invoice: Invoice, user: Any, reason: str = "") -> Invoice:
                 "so the record stays honest."
             }
         )
+    from apps.fiscal.services import credit_note
+
+    credit_note(invoice, reason)  # a ZRA tax invoice is cancelled with a credit note
     invoice.status = Invoice.Status.VOID
     invoice.voided_at = timezone.now()
     invoice.void_reason = reason
@@ -180,6 +186,7 @@ def reissue_invoice(invoice: Invoice, user: Any, reason: str = "") -> Invoice:
         lines=lines,
         customer=original.customer,
         currency=original.currency,
+        exchange_rate=original.exchange_rate,
         issue_date=today,
         due_date=today + term,
         notes=original.notes,
@@ -274,3 +281,28 @@ def mark_viewed(invoice: Invoice) -> None:
     )
     if updated:
         log(invoice.business, ActivityLog.Verb.VIEWED, "Viewed by customer", invoice=invoice)
+
+
+@transaction.atomic
+def set_exchange_rate(invoice: Invoice, user: Any, rate: Decimal) -> Invoice:
+    """Record the Kwacha rate for a foreign-currency invoice. Allowed after sending: it doesn't
+    change what the customer owes, only how the invoice counts in Kwacha reports."""
+    invoice = _lock(invoice)
+    if invoice.currency == "ZMW":
+        raise ValidationError({"exchange_rate": "Kwacha invoices don't need an exchange rate."})
+    if invoice.status == Invoice.Status.VOID:
+        raise ValidationError({"detail": "This invoice is void."})
+    if invoice.fiscal_receipts.exists():  # type: ignore[attr-defined]
+        raise ValidationError(
+            {"exchange_rate": "This rate was reported to ZRA and can't change now."}
+        )
+    invoice.exchange_rate = rate
+    invoice.save(update_fields=["exchange_rate", "updated_at"])
+    log(
+        invoice.business,
+        ActivityLog.Verb.UPDATED,
+        f"Exchange rate set: 1 {invoice.currency} = K{format_rate(rate)}",
+        invoice=invoice,
+        actor=user,
+    )
+    return invoice  # updated_at moved, so the cached PDF is rebuilt with the rate

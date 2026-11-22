@@ -17,6 +17,46 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/auth/invites/{token}/:
+    get:
+      operationId: auth_invites_retrieve
+      description: Shown on the join page before signing up or logging in.
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - auth
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteInfo'
+          description: ''
+  /api/auth/invites/{token}/accept/:
+    post:
+      operationId: auth_invites_accept_create
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - auth
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/auth/login/:
     post:
       operationId: auth_login_create
@@ -60,6 +100,31 @@ paths:
       operationId: auth_me_retrieve
       tags:
       - auth
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+          description: ''
+    patch:
+      operationId: auth_me_partial_update
+      description: Change your own name or app language.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUserRequest'
       security:
       - cookieAuth: []
       responses:
@@ -934,6 +999,57 @@ paths:
               schema:
                 $ref: '#/components/schemas/Delivery'
           description: ''
+  /api/invoices/{id}/exchange-rate/:
+    post:
+      operationId: invoices_exchange_rate_create
+      description: Set the Kwacha rate of a foreign-currency invoice, also after sending
+        (for reports).
+      parameters:
+      - in: query
+        name: customer
+        schema:
+          type: integer
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - draft
+          - overdue
+          - paid
+          - partial
+          - sent
+          - unpaid
+          - void
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExchangeRateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ExchangeRateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ExchangeRateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
   /api/invoices/{id}/payments/:
     post:
       operationId: invoices_payments_create
@@ -1307,7 +1423,10 @@ paths:
   /api/invoices/export/:
     get:
       operationId: invoices_export_retrieve
-      description: The invoice list as CSV (same filters as the list; amounts in Kwacha).
+      description: |-
+        The invoice list as CSV (same filters as the list), in each invoice's currency.
+
+        Foreign-currency invoices also get their Kwacha rate and total, when a rate is set.
       parameters:
       - in: query
         name: customer
@@ -2290,6 +2409,222 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/reports/:
+    get:
+      operationId: reports_retrieve
+      description: 'Invoiced and collected in a date range (default: this month),
+        and owed right now.'
+      parameters:
+      - in: query
+        name: end
+        schema:
+          type: string
+          format: date
+        description: Up to this date (inclusive)
+      - in: query
+        name: start
+        schema:
+          type: string
+          format: date
+        description: From this date (inclusive)
+      tags:
+      - reports
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+          description: ''
+  /api/reports/export/:
+    get:
+      operationId: reports_export_retrieve
+      description: 'Month by month, per currency, with the Kwacha totals: for the
+        accountant''s spreadsheet.'
+      parameters:
+      - in: query
+        name: end
+        schema:
+          type: string
+          format: date
+        description: Up to this date (inclusive)
+      - in: query
+        name: start
+        schema:
+          type: string
+          format: date
+        description: From this date (inclusive)
+      tags:
+      - reports
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            text/csv:
+              schema:
+                type: string
+          description: ''
+  /api/team/:
+    get:
+      operationId: team_retrieve
+      tags:
+      - team
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+          description: ''
+  /api/team/invites/:
+    post:
+      operationId: team_invites_create
+      tags:
+      - team
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InviteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InviteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+          description: ''
+  /api/team/invites/{id}/:
+    delete:
+      operationId: team_invites_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - team
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/team/members/{id}/:
+    patch:
+      operationId: team_members_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - team
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRoleRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRoleRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRoleRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+          description: ''
+    delete:
+      operationId: team_members_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - team
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/zra/:
+    get:
+      operationId: zra_retrieve
+      description: The business's ZRA Smart Invoice (VSDC) settings.
+      tags:
+      - zra
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ZraDevice'
+          description: ''
+    put:
+      operationId: zra_update
+      description: The business's ZRA Smart Invoice (VSDC) settings.
+      tags:
+      - zra
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZraDeviceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ZraDeviceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ZraDeviceRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ZraDevice'
+          description: ''
+  /api/zra/test/:
+    post:
+      operationId: zra_test_create
+      description: Initialise the device on the VSDC (selectInitInfo) and keep its
+        SDC ID and MRC number.
+      tags:
+      - zra
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionTest'
+          description: ''
 components:
   schemas:
     ActivityLog:
@@ -2329,6 +2664,35 @@ components:
       required:
       - message
       - verb
+    Aging:
+      type: object
+      properties:
+        amount:
+          type: integer
+        count:
+          type: integer
+        bucket:
+          type: string
+        name:
+          type: string
+      required:
+      - amount
+      - bucket
+      - count
+      - name
+    Amount:
+      type: object
+      properties:
+        amount:
+          type: integer
+        count:
+          type: integer
+      required:
+      - amount
+      - count
+    BlankEnum:
+      enum:
+      - ''
     Business:
       type: object
       properties:
@@ -2479,6 +2843,45 @@ components:
       description: |-
         * `ZMW` - Zambian Kwacha
         * `USD` - US Dollar
+    CurrencyReport:
+      type: object
+      properties:
+        currency:
+          type: string
+        invoiced:
+          $ref: '#/components/schemas/Amount'
+        collected:
+          $ref: '#/components/schemas/Amount'
+        outstanding:
+          $ref: '#/components/schemas/Amount'
+        overdue:
+          $ref: '#/components/schemas/Amount'
+        by_method:
+          type: array
+          items:
+            $ref: '#/components/schemas/Method'
+        aging:
+          type: array
+          items:
+            $ref: '#/components/schemas/Aging'
+        months:
+          type: array
+          items:
+            $ref: '#/components/schemas/Month'
+        top_customers:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopCustomer'
+      required:
+      - aging
+      - by_method
+      - collected
+      - currency
+      - invoiced
+      - months
+      - outstanding
+      - overdue
+      - top_customers
     Customer:
       type: object
       properties:
@@ -2500,8 +2903,26 @@ components:
             maxLength: 0
         address:
           type: string
+        tpin:
+          description: The customer's TPIN, printed on ZRA tax invoices (for business
+            customers).
+          oneOf:
+          - type: string
+            pattern: ^\d{10}$
+            maxLength: 10
+          - type: string
+            maxLength: 0
         notes:
           type: string
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          description: |-
+            Language of the messages and pages this customer gets
+
+            * `en` - English
+            * `bem` - Icibemba (Bemba)
+            * `ny` - Chinyanja (Nyanja)
         created_at:
           type: string
           format: date-time
@@ -2529,8 +2950,26 @@ components:
             maxLength: 0
         address:
           type: string
+        tpin:
+          description: The customer's TPIN, printed on ZRA tax invoices (for business
+            customers).
+          oneOf:
+          - type: string
+            pattern: ^\d{10}$
+            maxLength: 10
+          - type: string
+            maxLength: 0
         notes:
           type: string
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          description: |-
+            Language of the messages and pages this customer gets
+
+            * `en` - English
+            * `bem` - Icibemba (Bemba)
+            * `ny` - Chinyanja (Nyanja)
       required:
       - name
     CustomerSummary:
@@ -2553,6 +2992,15 @@ components:
             maxLength: 254
           - type: string
             maxLength: 0
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          description: |-
+            Language of the messages and pages this customer gets
+
+            * `en` - English
+            * `bem` - Icibemba (Bemba)
+            * `ny` - Chinyanja (Nyanja)
       required:
       - id
       - name
@@ -2574,6 +3022,15 @@ components:
             maxLength: 254
           - type: string
             maxLength: 0
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          description: |-
+            Language of the messages and pages this customer gets
+
+            * `en` - English
+            * `bem` - Icibemba (Bemba)
+            * `ny` - Chinyanja (Nyanja)
       required:
       - name
     Dashboard:
@@ -2725,6 +3182,89 @@ components:
       description: |-
         * `sandbox` - Sandbox (test)
         * `live` - Live
+    ExchangeRateRequest:
+      type: object
+      properties:
+        exchange_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,4})?$
+          description: Kwacha per 1 unit of the invoice currency, e.g. 26.85 for US$1
+      required:
+      - exchange_rate
+    FiscalReceipt:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/FiscalReceiptKindEnum'
+          readOnly: true
+        document_number:
+          type: string
+          readOnly: true
+          description: Our number sent as cisInvcNo (the invoice or credit note number)
+        receipt_no:
+          type: string
+          readOnly: true
+        sdc_id:
+          type: string
+          readOnly: true
+        mrc_no:
+          type: string
+          readOnly: true
+        internal_data:
+          type: string
+          readOnly: true
+        signature:
+          type: string
+          readOnly: true
+        qr_url:
+          type: string
+          format: uri
+          readOnly: true
+        signed_at:
+          type: string
+          readOnly: true
+          description: As the VSDC sent it
+        taxable_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,4})?$
+          readOnly: true
+        tax_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,4})?$
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - document_number
+      - id
+      - internal_data
+      - kind
+      - mrc_no
+      - qr_url
+      - receipt_no
+      - sdc_id
+      - signature
+      - signed_at
+      - tax_total
+      - taxable_total
+    FiscalReceiptKindEnum:
+      enum:
+      - sale
+      - credit
+      type: string
+      description: |-
+        * `sale` - Tax invoice
+        * `credit` - Credit note
     FrequencyEnum:
       enum:
       - weekly
@@ -2743,6 +3283,75 @@ components:
       required:
       - database
       - status
+    Invite:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        invited_by:
+          type: string
+          readOnly: true
+          default: ''
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+        link:
+          type: string
+          readOnly: true
+          description: Share it on WhatsApp if email is slow.
+      required:
+      - created_at
+      - email
+      - expires_at
+      - id
+      - invited_by
+      - link
+      - role
+    InviteInfo:
+      type: object
+      properties:
+        business:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+        invited_by:
+          type: string
+        is_open:
+          type: boolean
+      required:
+      - business
+      - email
+      - invited_by
+      - is_open
+      - role
+    InviteRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+      required:
+      - email
+      - role
     Invoice:
       type: object
       properties:
@@ -2785,6 +3394,13 @@ components:
         balance:
           type: integer
           readOnly: true
+        exchange_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,4})?$
+          nullable: true
+          description: Kwacha per 1 unit of the invoice currency on the issue date
+            (not for ZMW).
         notes:
           type: string
         lines:
@@ -2864,6 +3480,11 @@ components:
           items:
             $ref: '#/components/schemas/ActivityLog'
           readOnly: true
+        fiscal_receipts:
+          type: array
+          items:
+            $ref: '#/components/schemas/FiscalReceipt'
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -2878,6 +3499,7 @@ components:
       - discount_total
       - display_status
       - due_date
+      - fiscal_receipts
       - from_quote
       - id
       - is_locked
@@ -3069,6 +3691,13 @@ components:
         customer_id:
           type: integer
           writeOnly: true
+        exchange_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,4})?$
+          nullable: true
+          description: Kwacha per 1 unit of the invoice currency on the issue date
+            (not for ZMW).
         notes:
           type: string
         lines:
@@ -3106,6 +3735,18 @@ components:
           minimum: 0
           format: int64
           description: Minor units (ngwee).
+        vat_category:
+          description: |-
+            ZRA VAT category. Blank uses the business default (only for ZRA tax invoices).
+
+            * `A` - Standard rated (16%)
+            * `C1` - Exports (0%)
+            * `C2` - Zero-rated by LPO (0%)
+            * `C3` - Zero-rated by nature (0%)
+            * `D` - Exempt
+          oneOf:
+          - $ref: '#/components/schemas/VatCategoryEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         is_active:
           type: boolean
         created_at:
@@ -3132,11 +3773,67 @@ components:
           minimum: 0
           format: int64
           description: Minor units (ngwee).
+        vat_category:
+          description: |-
+            ZRA VAT category. Blank uses the business default (only for ZRA tax invoices).
+
+            * `A` - Standard rated (16%)
+            * `C1` - Exports (0%)
+            * `C2` - Zero-rated by LPO (0%)
+            * `C3` - Zero-rated by nature (0%)
+            * `D` - Exempt
+          oneOf:
+          - $ref: '#/components/schemas/VatCategoryEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         is_active:
           type: boolean
       required:
       - name
       - unit_price
+    ItemTypeEnum:
+      enum:
+      - '2'
+      - '3'
+      type: string
+      description: |-
+        * `2` - Goods (finished products)
+        * `3` - Services (no stock)
+    Kwacha:
+      type: object
+      properties:
+        invoiced:
+          type: integer
+        collected:
+          type: integer
+        outstanding:
+          type: integer
+        overdue:
+          type: integer
+        months:
+          type: array
+          items:
+            $ref: '#/components/schemas/Month'
+        missing_rates:
+          type: integer
+          description: Foreign-currency invoices left out because they have no exchange
+            rate
+      required:
+      - collected
+      - invoiced
+      - missing_rates
+      - months
+      - outstanding
+      - overdue
+    LanguageEnum:
+      enum:
+      - en
+      - bem
+      - ny
+      type: string
+      description: |-
+        * `en` - English
+        * `bem` - Icibemba (Bemba)
+        * `ny` - Chinyanja (Nyanja)
     LencoAccount:
       type: object
       properties:
@@ -3206,6 +3903,22 @@ components:
       - businesses
       - current_business
       - user
+    Method:
+      type: object
+      properties:
+        amount:
+          type: integer
+        count:
+          type: integer
+        method:
+          type: string
+        name:
+          type: string
+      required:
+      - amount
+      - count
+      - method
+      - name
     MethodEnum:
       enum:
       - cash
@@ -3237,6 +3950,20 @@ components:
       - amount
       - count
       - currency
+    Month:
+      type: object
+      properties:
+        month:
+          type: string
+          description: YYYY-MM
+        invoiced:
+          type: integer
+        collected:
+          type: integer
+      required:
+      - collected
+      - invoiced
+      - month
     PaginatedBusinessList:
       type: object
       required:
@@ -3462,8 +4189,26 @@ components:
             maxLength: 0
         address:
           type: string
+        tpin:
+          description: The customer's TPIN, printed on ZRA tax invoices (for business
+            customers).
+          oneOf:
+          - type: string
+            pattern: ^\d{10}$
+            maxLength: 10
+          - type: string
+            maxLength: 0
         notes:
           type: string
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          description: |-
+            Language of the messages and pages this customer gets
+
+            * `en` - English
+            * `bem` - Icibemba (Bemba)
+            * `ny` - Chinyanja (Nyanja)
     PatchedInvoiceRequest:
       type: object
       properties:
@@ -3478,6 +4223,13 @@ components:
         customer_id:
           type: integer
           writeOnly: true
+        exchange_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,4})?$
+          nullable: true
+          description: Kwacha per 1 unit of the invoice currency on the issue date
+            (not for ZMW).
         notes:
           type: string
         lines:
@@ -3499,6 +4251,18 @@ components:
           minimum: 0
           format: int64
           description: Minor units (ngwee).
+        vat_category:
+          description: |-
+            ZRA VAT category. Blank uses the business default (only for ZRA tax invoices).
+
+            * `A` - Standard rated (16%)
+            * `C1` - Exports (0%)
+            * `C2` - Zero-rated by LPO (0%)
+            * `C3` - Zero-rated by nature (0%)
+            * `D` - Exempt
+          oneOf:
+          - $ref: '#/components/schemas/VatCategoryEnum'
+          - $ref: '#/components/schemas/BlankEnum'
         is_active:
           type: boolean
     PatchedQuoteRequest:
@@ -3556,6 +4320,26 @@ components:
           $ref: '#/components/schemas/SendModeEnum'
         is_active:
           type: boolean
+    PatchedRoleRequest:
+      type: object
+      properties:
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+    PatchedUserRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+          maxLength: 150
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          description: |-
+            App language
+
+            * `en` - English
+            * `bem` - Icibemba (Bemba)
+            * `ny` - Chinyanja (Nyanja)
     Payment:
       type: object
       properties:
@@ -3636,6 +4420,26 @@ components:
         * `unpaid` - Unpaid
         * `partial` - Partly paid
         * `paid` - Paid
+    PaymentTypeEnum:
+      enum:
+      - '01'
+      - '02'
+      - '03'
+      - '04'
+      - '05'
+      - '06'
+      - '07'
+      - 08
+      type: string
+      description: |-
+        * `01` - Cash
+        * `02` - Credit (paid later)
+        * `03` - Cash/credit
+        * `04` - Bank cheque
+        * `05` - Card
+        * `06` - Mobile money
+        * `07` - Other
+        * `08` - Bank transfer
     Quote:
       type: object
       properties:
@@ -4104,6 +4908,33 @@ components:
           type: boolean
       required:
       - paused
+    Report:
+      type: object
+      properties:
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        as_of:
+          type: string
+          format: date
+          description: Outstanding and overdue are as of this day
+        currencies:
+          type: array
+          items:
+            $ref: '#/components/schemas/CurrencyReport'
+        kwacha:
+          allOf:
+          - $ref: '#/components/schemas/Kwacha'
+          description: Everything in Kwacha at each invoice's own rate
+      required:
+      - as_of
+      - currencies
+      - end
+      - kwacha
+      - start
     RespondRequest:
       type: object
       properties:
@@ -4111,6 +4942,18 @@ components:
           type: boolean
       required:
       - accepted
+    RoleEnum:
+      enum:
+      - owner
+      - admin
+      - staff
+      - accountant
+      type: string
+      description: |-
+        * `owner` - Owner
+        * `admin` - Admin
+        * `staff` - Staff
+        * `accountant` - Accountant
     SendModeEnum:
       enum:
       - draft
@@ -4254,6 +5097,64 @@ components:
       description: |-
         * `invoice` - invoice
         * `payment` - payment
+    Team:
+      type: object
+      properties:
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamMember'
+        invites:
+          type: array
+          items:
+            $ref: '#/components/schemas/Invite'
+      required:
+      - invites
+      - members
+    TeamMember:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        full_name:
+          type: string
+          readOnly: true
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        is_you:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - email
+      - full_name
+      - id
+      - is_you
+    TopCustomer:
+      type: object
+      properties:
+        customer_id:
+          type: integer
+        name:
+          type: string
+        invoiced:
+          type: integer
+        count:
+          type: integer
+      required:
+      - count
+      - customer_id
+      - invoiced
+      - name
     User:
       type: object
       properties:
@@ -4267,9 +5168,32 @@ components:
         full_name:
           type: string
           maxLength: 150
+        language:
+          allOf:
+          - $ref: '#/components/schemas/LanguageEnum'
+          description: |-
+            App language
+
+            * `en` - English
+            * `bem` - Icibemba (Bemba)
+            * `ny` - Chinyanja (Nyanja)
       required:
       - email
       - id
+    VatCategoryEnum:
+      enum:
+      - A
+      - C1
+      - C2
+      - C3
+      - D
+      type: string
+      description: |-
+        * `A` - Standard rated (16%)
+        * `C1` - Exports (0%)
+        * `C2` - Zero-rated by LPO (0%)
+        * `C3` - Zero-rated by nature (0%)
+        * `D` - Exempt
     VerbEnum:
       enum:
       - created
@@ -4327,6 +5251,109 @@ components:
       required:
       - message
       - url
+    ZraDevice:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          description: Report every sent invoice to ZRA and issue it as a tax invoice.
+        vsdc_url:
+          type: string
+          format: uri
+          title: VSDC address
+          description: Where your ZRA VSDC runs, e.g. http://10.0.0.5:8080/zrasandboxvsdc
+          maxLength: 200
+        branch_id:
+          type: string
+          title: Branch ID (bhfId)
+          maxLength: 3
+        device_serial:
+          type: string
+          title: Device serial (dvcSrlNo)
+          maxLength: 50
+        item_class_code:
+          type: string
+          title: Item classification code
+          description: ZRA item class code used for your items (from ZRA's code list).
+          maxLength: 10
+        item_type:
+          allOf:
+          - $ref: '#/components/schemas/ItemTypeEnum'
+          description: |-
+            ZRA product type for your items. Goods also need stock reports to ZRA.
+
+            * `2` - Goods (finished products)
+            * `3` - Services (no stock)
+        default_vat_category:
+          $ref: '#/components/schemas/VatCategoryEnum'
+        payment_type:
+          $ref: '#/components/schemas/PaymentTypeEnum'
+        sdc_id:
+          type: string
+          readOnly: true
+        mrc_no:
+          type: string
+          readOnly: true
+        initialized_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        vat_registered:
+          type: boolean
+          readOnly: true
+        tpin:
+          type: string
+          readOnly: true
+        is_ready:
+          type: boolean
+          readOnly: true
+      required:
+      - initialized_at
+      - is_ready
+      - mrc_no
+      - sdc_id
+      - tpin
+      - vat_registered
+    ZraDeviceRequest:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          description: Report every sent invoice to ZRA and issue it as a tax invoice.
+        vsdc_url:
+          type: string
+          format: uri
+          minLength: 1
+          title: VSDC address
+          description: Where your ZRA VSDC runs, e.g. http://10.0.0.5:8080/zrasandboxvsdc
+          maxLength: 200
+        branch_id:
+          type: string
+          minLength: 1
+          title: Branch ID (bhfId)
+          maxLength: 3
+        device_serial:
+          type: string
+          title: Device serial (dvcSrlNo)
+          maxLength: 50
+        item_class_code:
+          type: string
+          title: Item classification code
+          description: ZRA item class code used for your items (from ZRA's code list).
+          maxLength: 10
+        item_type:
+          allOf:
+          - $ref: '#/components/schemas/ItemTypeEnum'
+          description: |-
+            ZRA product type for your items. Goods also need stock reports to ZRA.
+
+            * `2` - Goods (finished products)
+            * `3` - Services (no stock)
+        default_vat_category:
+          $ref: '#/components/schemas/VatCategoryEnum'
+        payment_type:
+          $ref: '#/components/schemas/PaymentTypeEnum'
   securitySchemes:
     cookieAuth:
       type: apiKey

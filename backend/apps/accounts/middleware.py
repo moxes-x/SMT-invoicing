@@ -2,7 +2,7 @@ from collections.abc import Callable
 
 from django.http import HttpRequest, HttpResponse
 
-from .models import Business
+from .models import Business, Membership
 
 SESSION_KEY = "current_business_id"
 
@@ -31,5 +31,13 @@ class CurrentBusinessMiddleware:
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
         # Resolved after AuthenticationMiddleware, so request.user is already the session user.
-        request.business = get_current_business(request)  # type: ignore[attr-defined]
+        business = get_current_business(request)
+        request.business = business  # type: ignore[attr-defined]
+        request.role = (  # type: ignore[attr-defined]
+            Membership.objects.filter(user_id=request.user.pk, business=business)
+            .values_list("role", flat=True)
+            .first()
+            if business is not None and request.user.pk is not None
+            else None
+        )
         return self.get_response(request)

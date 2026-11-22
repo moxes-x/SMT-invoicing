@@ -62,7 +62,7 @@ class BusinessSerializer(serializers.ModelSerializer[Business]):
 class UserSerializer(serializers.ModelSerializer[User]):
     class Meta:
         model = User
-        fields = ["id", "email", "full_name"]
+        fields = ["id", "email", "full_name", "language"]
         read_only_fields = ["id", "email"]
 
 

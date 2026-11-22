@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "apps.audit",
     "apps.recurring",
     "apps.quotes",
+    "apps.fiscal",
 ]
 
 MIDDLEWARE = [
@@ -148,7 +149,8 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "DEFAULT_PAGINATION_CLASS": "apps.core.pagination.Pagination",
     "PAGE_SIZE": 50,
-    "DEFAULT_THROTTLE_RATES": {"auth": "10/min"},
+    # Sign-up/log-in attempts per IP. The e2e job raises it: every test signs up from one IP.
+    "DEFAULT_THROTTLE_RATES": {"auth": env.str("AUTH_THROTTLE_RATE", default="10/min")},
 }
 
 SPECTACULAR_SETTINGS = {
@@ -158,6 +160,7 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
     "ENUM_NAME_OVERRIDES": {
+        "VatCategoryEnum": "apps.fiscal.models.VatCategory",
         "CurrencyEnum": "apps.accounts.models.Currency",
         "InvoiceStatusEnum": "apps.invoices.models.Invoice.Status",
         "InvoiceDisplayStatusEnum": "apps.invoices.models.DISPLAY_STATUS_CHOICES",

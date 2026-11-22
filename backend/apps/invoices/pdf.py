@@ -7,7 +7,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.template.loader import render_to_string
 
-TEMPLATE_VERSION = "2"
+TEMPLATE_VERSION = "5"
 
 
 def document_context(doc: Any) -> dict[str, object]:
@@ -20,6 +20,9 @@ def document_context(doc: Any) -> dict[str, object]:
     if hasattr(doc, "payments"):
         ctx["invoice"] = doc
         ctx["payments"] = list(doc.payments.all())
+        receipts = {r.kind: r for r in doc.fiscal_receipts.all()}
+        ctx["fiscal"] = receipts.get("sale")
+        ctx["credit_note"] = receipts.get("credit")
     else:
         ctx["quote"] = doc
     return ctx

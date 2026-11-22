@@ -20,7 +20,7 @@ import { useForm } from "react-hook-form";
 import { Link, useNavigate, useParams } from "react-router";
 import { z } from "zod";
 
-import { useMe } from "@/api/auth";
+import { useAccess, useMe } from "@/api/auth";
 import {
   useAppConfig,
   useDeletePayment,
@@ -29,6 +29,7 @@ import {
   usePauseReminders,
   useRecordPayment,
   useSendInvoice,
+  useSetExchangeRate,
   type Invoice,
   type PaymentMethod,
 } from "@/api/resources";
@@ -47,6 +48,8 @@ import { Select } from "@/components/ui/select";
 import { applyApiErrors } from "@/lib/apply-errors";
 import { errorText, sendViaWhatsAppLink } from "@/lib/send";
 import { formatDate, formatDateTime, todayISO } from "@/lib/dates";
+import { isRate, rateInput } from "@/lib/document-form";
+import { translate, type Lang } from "@/i18n";
 import { currencyPrefix, formatMoney, parseMoney, toMoneyInput } from "@/lib/money";
 
 const METHODS: { value: PaymentMethod; label: string }[] = [
@@ -149,6 +152,8 @@ function Summary({ invoice }: { invoice: Invoice }) {
           />
           <Fact label="Due" value={formatDate(invoice.due_date)} danger={invoice.is_overdue} />
         </div>
+        {c !== "ZMW" && invoice.status !== "void" && <ExchangeRate invoice={invoice} />}
+        <ZraReceipts invoice={invoice} />
         {(invoice.from_quote || invoice.recurring_id) && (
           <p className="text-muted-foreground text-sm">
             {invoice.from_quote && (
@@ -203,6 +208,7 @@ function Summary({ invoice }: { invoice: Invoice }) {
 function Actions({ invoice, open }: { invoice: Invoice; open: (d: DialogName) => void }) {
   const { data: config } = useAppConfig();
   const deliver = useSendInvoice(invoice.id, "deliver");
+  const { canWrite, canManage } = useAccess();
   const action = useInvoiceAction(invoice.id);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -239,34 +245,38 @@ function Actions({ invoice, open }: { invoice: Invoice; open: (d: DialogName) =>
   return (
     <div className="grid gap-2">
       <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-        <Button
-          onClick={shareWhatsApp}
-          disabled={deliver.isPending}
-          className="bg-[#1fa855] hover:bg-[#1fa855]/90"
-        >
-          <MessageCircle /> {isDraft ? "Send on WhatsApp" : "WhatsApp"}
-        </Button>
-        <Button variant={isDraft ? "outline" : "secondary"} onClick={() => open("send")}>
-          <Send /> {isDraft ? "Other ways to send" : "Send again"}
-        </Button>
-        {canPay && (
+        {canWrite && (
+          <Button
+            onClick={shareWhatsApp}
+            disabled={deliver.isPending}
+            className="bg-[#1fa855] hover:bg-[#1fa855]/90"
+          >
+            <MessageCircle /> {isDraft ? "Send on WhatsApp" : "WhatsApp"}
+          </Button>
+        )}
+        {canWrite && (
+          <Button variant={isDraft ? "outline" : "secondary"} onClick={() => open("send")}>
+            <Send /> {isDraft ? "Other ways to send" : "Send again"}
+          </Button>
+        )}
+        {canWrite && canPay && (
           <Button variant="default" onClick={() => open("payment")}>
             <Wallet /> Record payment
           </Button>
         )}
-        {canPay && (
+        {canWrite && canPay && (
           <Button variant="outline" onClick={() => open("remind")}>
             <BellRing /> Send reminder
           </Button>
         )}
-        {isDraft && (
+        {canWrite && isDraft && (
           <Button asChild variant="outline">
             <Link to={`/invoices/${invoice.id}/edit`}>
               <Pencil /> Edit
             </Link>
           </Button>
         )}
-        {isDraft && (
+        {canWrite && isDraft && (
           <Button variant="outline" onClick={markSent} disabled={action.isPending}>
             <Check /> Mark as sent
           </Button>
@@ -286,12 +296,12 @@ function Actions({ invoice, open }: { invoice: Invoice; open: (d: DialogName) =>
             <Download /> PDF
           </a>
         </Button>
-        {isSent && (
+        {canManage && isSent && (
           <Button variant="ghost" onClick={() => open("reissue")}>
             <RefreshCw /> Change
           </Button>
         )}
-        {invoice.payments.length === 0 && (
+        {canManage && invoice.payments.length === 0 && (
           <Button variant="ghost" className="text-destructive" onClick={() => open("void")}>
             <Ban /> Void
           </Button>
@@ -313,16 +323,129 @@ function Actions({ invoice, open }: { invoice: Invoice; open: (d: DialogName) =>
   );
 }
 
-function receiptText(invoice: Invoice, p: Invoice["payments"][number]): string {
+/** Kwacha rate of a foreign-currency invoice: shown, or added later for the Kwacha reports. */
+/** The ZRA receipts for a tax invoice: the sale, and the credit note if it was voided. */
+function ZraReceipts({ invoice }: { invoice: Invoice }) {
+  const receipts = invoice.fiscal_receipts ?? [];
+  if (!receipts.length) return null;
   return (
-    `Thank you${invoice.customer.name ? `, ${invoice.customer.name.split(" ")[0]}` : ""}. ` +
-    `Receipt ${p.receipt_number} for ${formatMoney(p.amount, invoice.currency)} ` +
-    `against invoice ${invoice.number}: ${p.receipt_url}`
+    <section aria-label="ZRA Smart Invoice" className="bg-muted grid gap-2 rounded-md p-3 text-sm">
+      <p className="font-medium">Tax invoice, signed by ZRA</p>
+      {receipts.map((r) => (
+        <dl key={r.id} className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+          <dt className="text-muted-foreground">
+            {r.kind === "credit" ? `Credit note ${r.document_number}` : "ZRA receipt"}
+          </dt>
+          <dd>{r.receipt_no || "–"}</dd>
+          <dt className="text-muted-foreground">SDC ID</dt>
+          <dd className="[overflow-wrap:anywhere]">{r.sdc_id || "–"}</dd>
+          {r.kind === "sale" && (
+            <>
+              <dt className="text-muted-foreground">VAT</dt>
+              <dd>{formatMoney(Math.round(Number(r.tax_total) * 100), invoice.currency)}</dd>
+            </>
+          )}
+          {r.qr_url && (
+            <>
+              <dt className="text-muted-foreground">Check</dt>
+              <dd>
+                <a
+                  className="text-primary underline"
+                  href={r.qr_url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  On the ZRA portal
+                </a>
+              </dd>
+            </>
+          )}
+        </dl>
+      ))}
+    </section>
   );
+}
+
+function ExchangeRate({ invoice }: { invoice: Invoice }) {
+  const { canWrite } = useAccess();
+  const set = useSetExchangeRate(invoice.id);
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(rateInput(invoice.exchange_rate));
+  const [error, setError] = useState<string | null>(null);
+  const rate = invoice.exchange_rate ? Number(invoice.exchange_rate) : null;
+
+  const save = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isRate(value)) return setError("Kwacha for one unit, like 26.85.");
+    setError(null);
+    try {
+      await set.mutateAsync(value.trim().replace(/,/g, ""));
+      setEditing(false);
+    } catch (err) {
+      setError(errorText(err, "Couldn't save the rate."));
+    }
+  };
+
+  if (editing) {
+    return (
+      <form onSubmit={save} className="grid gap-2" noValidate>
+        <FormField
+          id="rate"
+          label={`Kwacha per ${currencyPrefix(invoice.currency)}1`}
+          error={error ?? undefined}
+        >
+          <div className="flex gap-2">
+            <Input
+              id="rate"
+              inputMode="decimal"
+              placeholder="e.g. 26.85"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              aria-invalid={!!error}
+            />
+            <Button type="submit" disabled={set.isPending}>
+              Save
+            </Button>
+          </div>
+        </FormField>
+      </form>
+    );
+  }
+  return (
+    <p className="text-muted-foreground flex flex-wrap items-center gap-x-2 text-sm">
+      {rate ? (
+        <span>
+          {formatMoney(Math.round(invoice.total * rate), "ZMW")} at K{rate} ={" "}
+          {currencyPrefix(invoice.currency)}1
+        </span>
+      ) : (
+        <span>No exchange rate yet, so Kwacha reports leave this invoice out.</span>
+      )}
+      {canWrite && !invoice.fiscal_receipts?.length && (
+        <Button variant="link" size="sm" className="h-auto p-0" onClick={() => setEditing(true)}>
+          {rate ? "Change rate" : "Add rate"}
+        </Button>
+      )}
+    </p>
+  );
+}
+
+/** In the customer's language (set on the customer), not the app's. */
+function receiptText(invoice: Invoice, p: Invoice["payments"][number]): string {
+  const first = invoice.customer.name?.split(" ")[0];
+  const lang = invoice.customer.language === "bem" || invoice.customer.language === "ny";
+  return translate(lang ? (invoice.customer.language as Lang) : "en", "receipt.message", {
+    commaName: first ? `, ${first}` : "",
+    receipt: p.receipt_number ?? "",
+    amount: formatMoney(p.amount, invoice.currency),
+    number: invoice.number,
+    url: p.receipt_url,
+  });
 }
 
 function Payments({ invoice }: { invoice: Invoice }) {
   const remove = useDeletePayment();
+  const { canManage } = useAccess();
   const phone = invoice.customer.phone?.replace("+", "") ?? "";
   return (
     <Section title="Payments">
@@ -355,7 +478,7 @@ function Payments({ invoice }: { invoice: Invoice }) {
                   <MessageCircle />
                 </a>
               </Button>
-              {p.source !== "online" && (
+              {canManage && p.source !== "online" && (
                 <Button
                   variant="ghost"
                   size="icon"
@@ -380,9 +503,10 @@ function Payments({ invoice }: { invoice: Invoice }) {
 function Sending({ invoice }: { invoice: Invoice }) {
   const { data: me } = useMe();
   const pause = usePauseReminders(invoice.id);
+  const { canWrite } = useAccess();
   const business = me?.current_business;
   const chasing = invoice.status === "sent" && invoice.balance > 0;
-  const auto = !!business?.auto_reminders && chasing;
+  const auto = canWrite && !!business?.auto_reminders && chasing;
   return (
     <Section
       title="Sending"

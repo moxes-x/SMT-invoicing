@@ -180,3 +180,75 @@ def lenco_account(owner_a):
     account.secret_key = "sk-test-secret-0000"
     account.save()
     return account
+
+
+class FakeVsdc:
+    """Stands in for ZRA's VSDC. `fail` makes the next call to a path answer with an error."""
+
+    def __init__(self):
+        self.requests = []
+        self.fail: dict[str, tuple[str, str]] = {}
+        self.receipt = 100
+
+    def handler(self, request):
+        import json
+
+        import httpx
+
+        body = json.loads(request.content)
+        path = "/" + request.url.path.split("/", 2)[-1]
+        self.requests.append((path, body))
+        if path in self.fail:
+            code, message = self.fail.pop(path)
+            return httpx.Response(200, json={"resultCd": code, "resultMsg": message})
+        data = None
+        if path == "/initializer/selectInitInfo":
+            data = {"info": {"sdcId": "SDC0010000001", "mrcNo": "MRC-1"}}
+        elif path in ("/trnsSales/saveSales", "/trnsSales/selectInvoice"):
+            self.receipt += 1
+            data = {
+                "rcptNo": self.receipt,
+                "intrlData": "INTRLDATA" + body["cisInvcNo"],
+                "rcptSign": "SIGN" + body["cisInvcNo"],
+                "vsdcRcptPbctDate": "20261101120000",
+                "sdcId": "SDC0010000001",
+                "mrcNo": "MRC-1",
+                "qrCodeUrl": f"https://sandboxportal.zra.org.zm/verify?r={self.receipt}",
+            }
+        return httpx.Response(
+            200,
+            json={"resultCd": "000", "resultMsg": "It is succeeded", "resultDt": "x", "data": data},
+        )
+
+    def calls(self, path):
+        return [body for p, body in self.requests if p == path]
+
+
+@pytest.fixture
+def vsdc_api(monkeypatch):
+    import httpx
+
+    fake = FakeVsdc()
+    real_client = httpx.Client
+    monkeypatch.setattr(
+        "apps.fiscal.vsdc.httpx.Client",
+        lambda **kw: real_client(transport=httpx.MockTransport(fake.handler)),
+    )
+    return fake
+
+
+@pytest.fixture
+def zra_device(owner_a):
+    from apps.fiscal.models import ZraDevice
+
+    business = owner_a.business
+    business.vat_registered = True
+    business.tpin = "1000000000"
+    business.save()
+    return ZraDevice.objects.create(
+        business=business,
+        enabled=True,
+        device_serial="20180520000000",
+        item_class_code="50102518",
+        sdc_id="SDC0010000001",
+    )

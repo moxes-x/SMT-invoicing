@@ -12,8 +12,9 @@ from django.db.models import F, OuterRef, Subquery, Sum, Value
 from django.db.models.functions import Coalesce
 
 from apps.accounts.models import Business, Currency
-from apps.core.money import line_amount, round_half_up
+from apps.core.money import line_amount, round_half_up, to_kwacha
 from apps.core.time import today
+from apps.fiscal.models import VatCategory
 
 DISPLAY_STATUS_LABELS = {
     "draft": "Draft",
@@ -69,6 +70,13 @@ class Invoice(models.Model):
     number = models.CharField(max_length=32)
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.DRAFT)
     currency = models.CharField(max_length=3, choices=Currency.choices, default=Currency.ZMW)
+    exchange_rate = models.DecimalField(
+        max_digits=12,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        help_text="Kwacha per 1 unit of the invoice currency on the issue date (not for ZMW).",
+    )
     issue_date = models.DateField(default=today)
     due_date = models.DateField()
     notes = models.TextField(blank=True)
@@ -124,6 +132,14 @@ class Invoice(models.Model):
 
     def __str__(self) -> str:
         return self.number
+
+    def in_kwacha(self, amount: int) -> int | None:
+        """`amount` (minor units of this invoice's currency) in ngwee, or None without a rate."""
+        return to_kwacha(amount, self.currency, self.exchange_rate)
+
+    @property
+    def kwacha_total(self) -> int | None:
+        return self.in_kwacha(self.total)
 
     # --- derived payment state -------------------------------------------------------------
     @property
@@ -198,6 +214,12 @@ class InvoiceLine(models.Model):
     unit_price = models.BigIntegerField(validators=[MinValueValidator(1)], help_text="ngwee")
     discount = models.BigIntegerField(
         default=0, validators=[MinValueValidator(0)], help_text="ngwee off this line"
+    )
+    vat_category = models.CharField(
+        max_length=2,
+        choices=VatCategory.choices,
+        blank=True,
+        help_text="ZRA VAT category for this line. Blank uses the item's, then the business's.",
     )
 
     class Meta:

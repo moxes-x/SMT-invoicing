@@ -10,6 +10,7 @@ class ItemViewSet(BusinessScopedMixin, viewsets.ModelViewSet[Item]):
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
     permission_classes = [HasBusiness]
+    manager_actions = ("destroy",)
     filter_backends = [filters.SearchFilter]
     search_fields = ["name", "description"]
     lookup_value_regex = r"\d+"

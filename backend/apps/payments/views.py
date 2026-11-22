@@ -1,6 +1,6 @@
 import csv
 import datetime as dt
-from typing import Any, cast
+from typing import Any
 
 from django.db.models import QuerySet
 from django.http import HttpResponse
@@ -8,12 +8,11 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from apps.accounts.models import Membership
-from apps.core.tenancy import BusinessScopedMixin, HasBusiness, require_business
+from apps.core.tenancy import BusinessScopedMixin, HasBusiness, require_business, require_manager
 from apps.invoices.services import delete_payment
 
 from . import lenco
@@ -64,6 +63,7 @@ class PaymentViewSet(
     queryset = Payment.objects.select_related("invoice")
     serializer_class = PaymentSerializer
     permission_classes = [HasBusiness]
+    manager_actions = ("destroy",)
     lookup_value_regex = r"\d+"
 
     def destroy(self, request: Request, *args: object, **kwargs: object) -> Response:
@@ -119,15 +119,7 @@ def _account(request: Request) -> LencoAccount:
 
 
 def _require_admin(request: Request) -> None:
-    role = (
-        Membership.objects.filter(
-            user_id=cast(int, request.user.pk), business=require_business(request)
-        )
-        .values_list("role", flat=True)
-        .first()
-    )
-    if role not in (Membership.Role.OWNER, Membership.Role.ADMIN):
-        raise PermissionDenied("Only owners and admins can change online payments.")
+    require_manager(request)
 
 
 @extend_schema(methods=["GET"], responses=LencoAccountSerializer)

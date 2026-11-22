@@ -11,6 +11,7 @@ import {
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 
+import { useAccess } from "@/api/auth";
 import { useAppConfig, useQuote, useQuoteAction, type Quote } from "@/api/resources";
 import { Fact, LinesCard, Section, Timeline } from "@/components/document-parts";
 import { FormField } from "@/components/form-field";
@@ -109,6 +110,7 @@ function Summary({ quote }: { quote: Quote }) {
 
 function Actions({ quote, open }: { quote: Quote; open: (d: DialogName) => void }) {
   const { send, respond } = useQuoteAction(quote.id);
+  const { canWrite } = useAccess();
   const [error, setError] = useState<string | null>(null);
   const isDraft = quote.status === "draft";
   const isSent = quote.status === "sent";
@@ -126,7 +128,7 @@ function Actions({ quote, open }: { quote: Quote; open: (d: DialogName) => void 
   return (
     <div className="grid gap-2">
       <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-        {(isDraft || isSent) && (
+        {canWrite && (isDraft || isSent) && (
           <Button
             onClick={() =>
               run(() => sendViaWhatsAppLink(send.mutateAsync), "Couldn't prepare the message.")
@@ -137,12 +139,12 @@ function Actions({ quote, open }: { quote: Quote; open: (d: DialogName) => void 
             <MessageCircle /> {isDraft ? "Send on WhatsApp" : "WhatsApp"}
           </Button>
         )}
-        {(isDraft || isSent) && (
+        {canWrite && (isDraft || isSent) && (
           <Button variant="outline" onClick={() => open("send")}>
             <Send /> {isDraft ? "Other ways to send" : "Send again"}
           </Button>
         )}
-        {canConvert && (
+        {canWrite && canConvert && (
           <Button
             variant={quote.status === "accepted" ? "default" : "outline"}
             onClick={() => open("convert")}
@@ -150,14 +152,14 @@ function Actions({ quote, open }: { quote: Quote; open: (d: DialogName) => void 
             <FileOutput /> Make invoice
           </Button>
         )}
-        {quote.is_editable && (
+        {canWrite && quote.is_editable && (
           <Button asChild variant="outline">
             <Link to={`/quotes/${quote.id}/edit`}>
               <Pencil /> Edit
             </Link>
           </Button>
         )}
-        {isSent && quote.display_status !== "expired" && (
+        {canWrite && isSent && quote.display_status !== "expired" && (
           <>
             <Button
               variant="outline"

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from typing import Any, ClassVar
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
@@ -8,6 +9,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator, RegexVa
 from django.db import models
 from django.utils import timezone
 
+from apps.core.i18n import Language
 from apps.core.validators import validate_e164_phone
 
 
@@ -38,6 +40,9 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=150, blank=True)
+    language = models.CharField(
+        max_length=3, choices=Language.choices, default=Language.ENGLISH, help_text="App language"
+    )
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     date_joined = models.DateTimeField(default=timezone.now)
@@ -100,13 +105,14 @@ class Business(models.Model):
 
 class Membership(models.Model):
     class Role(models.TextChoices):
-        OWNER = "owner", "Owner"
-        ADMIN = "admin", "Admin"
-        MEMBER = "member", "Member"
+        OWNER = "owner", "Owner"  # everything, including the team and closing the account
+        ADMIN = "admin", "Admin"  # everything except changing owners
+        STAFF = "staff", "Staff"  # day-to-day: customers, invoices, quotes, payments
+        ACCOUNTANT = "accountant", "Accountant"  # read-only, plus reports and exports
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="memberships")
     business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name="memberships")
-    role = models.CharField(max_length=10, choices=Role.choices, default=Role.MEMBER)
+    role = models.CharField(max_length=10, choices=Role.choices, default=Role.STAFF)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -116,3 +122,37 @@ class Membership(models.Model):
 
     def __str__(self) -> str:
         return f"{self.user} @ {self.business} ({self.role})"
+
+
+# Who may do what. Views check these sets; the app hides what a role can't use.
+MANAGER_ROLES = frozenset({Membership.Role.OWNER, Membership.Role.ADMIN})
+WRITE_ROLES = frozenset({Membership.Role.OWNER, Membership.Role.ADMIN, Membership.Role.STAFF})
+
+
+def invite_expiry() -> Any:
+    import datetime as dt
+
+    return timezone.now() + dt.timedelta(days=7)
+
+
+class Invite(models.Model):
+    """An emailed link to join a business with a role. Accepted by an account with that email."""
+
+    business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name="invites")
+    email = models.EmailField()
+    role = models.CharField(max_length=10, choices=Membership.Role.choices)
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+    invited_by = models.ForeignKey(User, null=True, on_delete=models.SET_NULL, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(default=invite_expiry)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.email} → {self.business} ({self.role})"
+
+    @property
+    def is_open(self) -> bool:
+        return self.accepted_at is None and self.expires_at > timezone.now()

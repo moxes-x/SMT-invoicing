@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useParams, useSearchParams } from "react-router"
 import { useMe } from "@/api/auth";
 import { useInvoice, useSaveInvoice } from "@/api/resources";
 import { DocumentEditor, EditorLoading } from "@/components/document-editor";
-import { emptyValues, linesToValues, toLineRequests } from "@/lib/document-form";
+import { emptyValues, linesToValues, rateInput, toLineRequests } from "@/lib/document-form";
 
 export function InvoiceEditorPage() {
   const { id } = useParams();
@@ -26,6 +26,7 @@ export function InvoiceEditorPage() {
         ...base,
         customer_id: String(invoice.customer.id),
         currency: invoice.currency === "USD" ? ("USD" as const) : ("ZMW" as const),
+        exchange_rate: rateInput(invoice.exchange_rate),
         issue_date: invoice.issue_date ?? base.issue_date,
         due_date: invoice.due_date,
         notes: invoice.notes ?? "",
@@ -45,6 +46,10 @@ export function InvoiceEditorPage() {
           id: invoice?.id,
           customer_id: Number(v.customer_id),
           currency: v.currency,
+          exchange_rate:
+            v.currency === "ZMW" || !v.exchange_rate.trim()
+              ? null
+              : v.exchange_rate.trim().replace(/,/g, ""),
           issue_date: v.issue_date,
           due_date: v.due_date,
           notes: v.notes,

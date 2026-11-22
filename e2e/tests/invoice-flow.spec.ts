@@ -24,7 +24,7 @@ test("sign up → customer → invoice → WhatsApp → customer opens link → 
   // Payment details shown on invoices
   await page.goto("/settings");
   await page.getByLabel("How customers pay you").fill("MTN MoMo 096 123 4567 (Mwila Banda)");
-  await page.getByRole("button", { name: "Save" }).click();
+  await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByText("Saved.")).toBeVisible();
 
   // Customer

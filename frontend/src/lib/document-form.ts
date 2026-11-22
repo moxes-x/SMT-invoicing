@@ -35,6 +35,7 @@ const lineSchema = z
 const baseSchema = z.object({
   customer_id: z.string().min(1, "Choose a customer."),
   currency: z.enum(["ZMW", "USD"]),
+  exchange_rate: z.string(), // invoice, non-Kwacha: Kwacha per 1 unit (optional)
   notes: z.string(),
   lines: z.array(lineSchema).min(1, "Add at least one line."),
   // invoice / quote
@@ -68,6 +69,13 @@ export function schemaFor(mode: EditorMode) {
         "0 to 120 days.",
       );
     } else {
+      if (mode === "invoice" && v.currency !== "ZMW") {
+        need(
+          "exchange_rate",
+          !v.exchange_rate.trim() || isRate(v.exchange_rate),
+          "Kwacha for one unit, like 26.85.",
+        );
+      }
       need("issue_date", !!v.issue_date, "Pick a date.");
       need("due_date", !!v.due_date, "Pick a date.");
       need(
@@ -98,6 +106,7 @@ export function emptyValues(
   return {
     customer_id: customerId,
     currency: currency === "USD" ? "USD" : "ZMW",
+    exchange_rate: "",
     notes: "",
     lines: [EMPTY_LINE],
     issue_date: today,
@@ -137,4 +146,15 @@ export function toLineRequests(lines: LineValues[]): InvoiceLineRequest[] {
     unit_price: parseMoney(l.price) ?? 0,
     discount: parseMoney(l.discount || "0") ?? 0,
   }));
+}
+
+/** "26.85" → true. Up to 4 decimals, more than zero. */
+export function isRate(text: string): boolean {
+  const t = text.trim().replace(/,/g, "");
+  return /^\d{1,8}(\.\d{1,4})?$/.test(t) && Number(t) > 0;
+}
+
+/** "27.5000" → "27.5" for the input; the API sends 4 decimals. */
+export function rateInput(rate: string | null | undefined): string {
+  return rate ? String(Number(rate)) : "";
 }

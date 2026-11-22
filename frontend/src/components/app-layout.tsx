@@ -1,16 +1,19 @@
-import { LogOut, Menu } from "lucide-react";
+import { CloudOff, LogOut, Menu } from "lucide-react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
 import { useLogout, useMe } from "@/api/auth";
 import { MAIN_NAV, MORE_NAV, NAV } from "@/components/nav";
 import { Button } from "@/components/ui/button";
+import { useOnline, useWaitingChanges } from "@/lib/offline";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n";
 
 export function AppLayout() {
   const { data: me } = useMe();
   const logout = useLogout();
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const t = useT();
   const inMore = pathname === "/more" || MORE_NAV.some((n) => pathname.startsWith(n.to));
   const signOut = async () => {
     await logout.mutateAsync();
@@ -35,12 +38,12 @@ export function AppLayout() {
                 )
               }
             >
-              <Icon className="size-4" /> {label}
+              <Icon className="size-4" /> {t(label)}
             </NavLink>
           ))}
         </nav>
         <Button variant="ghost" className="mt-auto justify-start" onClick={signOut}>
-          <LogOut /> Log out
+          <LogOut /> {t("action.logout")}
         </Button>
       </aside>
 
@@ -48,6 +51,8 @@ export function AppLayout() {
       <header className="bg-background/90 sticky top-0 z-10 flex h-14 items-center gap-2 border-b px-4 backdrop-blur md:hidden">
         <span className="truncate font-semibold">{me?.current_business?.name}</span>
       </header>
+
+      <OfflineBanner />
 
       <main className="mx-auto max-w-4xl p-4 md:p-8">
         <Outlet />
@@ -68,7 +73,7 @@ export function AppLayout() {
             }
           >
             <Icon className="size-5" />
-            {label}
+            {t(label)}
           </NavLink>
         ))}
         <NavLink
@@ -79,9 +84,35 @@ export function AppLayout() {
           )}
         >
           <Menu className="size-5" />
-          More
+          {t("nav.more")}
         </NavLink>
       </nav>
+    </div>
+  );
+}
+
+function OfflineBanner() {
+  const online = useOnline();
+  const waiting = useWaitingChanges();
+  const t = useT();
+  if (online && waiting === 0) return null;
+  return (
+    <div
+      role="status"
+      className="bg-warning/25 text-foreground flex items-start gap-2 border-b px-4 py-2 text-sm md:px-8"
+    >
+      <CloudOff className="mt-0.5 size-4 shrink-0" />
+      <p>
+        {online ? t("offline.syncing") : t("offline.title")}
+        {!online &&
+          ` ${
+            waiting === 0
+              ? t("offline.saveLater")
+              : waiting === 1
+                ? t("offline.waitingOne")
+                : t("offline.waitingMany", { count: waiting })
+          }`}
+      </p>
     </div>
   );
 }

@@ -90,9 +90,13 @@ class TestExports:
         assert res.status_code == 200
         assert res["Content-Type"].startswith("text/csv")
         lines = res.content.decode("utf-8-sig").strip().splitlines()
-        assert lines[0] == "Number,Issued,Due,Customer,Currency,Total,Paid,Balance,Status"
+        assert lines[0] == (
+            "Number,Issued,Due,Customer,Currency,Total,Paid,Balance,Status,"
+            "Kwacha rate,Total in Kwacha"
+        )
         assert len(lines) == 1 + 3  # Nov ZMW, USD, the other customer's; Oct is paid
         assert any(",Chanda Mwale,ZMW,300.00,0.00,300.00," in line for line in lines)
+        assert any(line.endswith(",,") and ",USD," in line for line in lines)  # no rate yet
 
     def test_payments_csv(self, client_a, owner_b, history):
         res = client_a.get("/api/payments/export/", {"start": "2026-11-01"})

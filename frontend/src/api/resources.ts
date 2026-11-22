@@ -146,7 +146,7 @@ function useInvalidateMoney() {
   const qc = useQueryClient();
   return (extra: QueryKey[] = []) =>
     Promise.all(
-      [invoiceKeys.all, ["dashboard"], ["payments"], ...extra].map((queryKey) =>
+      [invoiceKeys.all, ["dashboard"], ["payments"], ["reports"], ...extra].map((queryKey) =>
         qc.invalidateQueries({ queryKey }),
       ),
     );
@@ -208,7 +208,11 @@ export function useUpdateBusiness(id: number) {
   return useMutation({
     mutationFn: (body: BusinessRequest) =>
       api<S["Business"]>(`/businesses/${id}/`, { method: "PATCH", json: body }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: meKey }),
+    onSuccess: () =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: meKey }),
+        qc.invalidateQueries({ queryKey: ["zra"] }),
+      ]),
   });
 }
 
@@ -253,6 +257,27 @@ export function usePauseReminders(id: number) {
     mutationFn: (paused: boolean) =>
       api<Invoice>(`/invoices/${id}/reminders/`, { method: "POST", json: { paused } }),
     onSuccess: (inv) => qc.setQueryData(invoiceKeys.detail(inv.id), inv),
+  });
+}
+
+export function useSetExchangeRate(id: number) {
+  const invalidate = useInvalidateMoney();
+  return useMutation({
+    mutationFn: (exchange_rate: string) =>
+      api<Invoice>(`/invoices/${id}/exchange-rate/`, { method: "POST", json: { exchange_rate } }),
+    onSuccess: () => invalidate(),
+  });
+}
+
+// ---- reports -------------------------------------------------------------------------------
+export type Report = S["Report"];
+export type CurrencyReport = Report["currencies"][number];
+
+export function useReport(range: { start: string; end: string }) {
+  return useQuery({
+    queryKey: ["reports", range],
+    queryFn: () => api<Report>(`/reports/${qs(range)}`),
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -388,6 +413,40 @@ export function useSaveOnlinePayments() {
 export function useTestOnlinePayments() {
   return useMutation({
     mutationFn: () => api<S["ConnectionTest"]>("/online-payments/test/", { method: "POST" }),
+  });
+}
+
+// ---- Phase 4e: ZRA Smart Invoice ------------------------------------------------------------
+export type ZraDevice = S["ZraDevice"];
+export type FiscalReceipt = S["FiscalReceipt"];
+export type VatCategory = S["VatCategoryEnum"];
+
+export const VAT_CATEGORIES: { value: VatCategory; label: string }[] = [
+  { value: "A", label: "Standard rated (16%)" },
+  { value: "C1", label: "Exports (0%)" },
+  { value: "C2", label: "Zero-rated by LPO (0%)" },
+  { value: "C3", label: "Zero-rated by nature (0%)" },
+  { value: "D", label: "Exempt" },
+];
+
+export function useZraDevice() {
+  return useQuery({ queryKey: ["zra"], queryFn: () => api<ZraDevice>("/zra/") });
+}
+
+export function useSaveZraDevice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: S["ZraDeviceRequest"]) =>
+      api<ZraDevice>("/zra/", { method: "PUT", json: body }),
+    onSuccess: (device) => qc.setQueryData(["zra"], device),
+  });
+}
+
+export function useTestZraDevice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<S["ConnectionTest"]>("/zra/test/", { method: "POST" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["zra"] }),
   });
 }
 

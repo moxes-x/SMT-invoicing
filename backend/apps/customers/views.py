@@ -69,6 +69,7 @@ class CustomerViewSet(BusinessScopedMixin, viewsets.ModelViewSet[Customer]):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
     permission_classes = [HasBusiness]
+    manager_actions = ("destroy",)
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ["name", "phone", "email"]
     ordering_fields = ["name", "created_at"]

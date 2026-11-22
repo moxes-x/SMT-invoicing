@@ -4,10 +4,12 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.routers import DefaultRouter
 
+from apps.accounts import team
 from apps.accounts.views import BusinessViewSet
 from apps.catalog.views import ItemViewSet
 from apps.customers.views import CustomerViewSet
-from apps.invoices import public
+from apps.fiscal.views import test_zra_device, zra_device
+from apps.invoices import public, reports
 from apps.invoices.views import InvoiceViewSet, app_config, dashboard
 from apps.messaging.webhooks import whatsapp_webhook
 from apps.payments import public as pay_public
@@ -32,8 +34,16 @@ urlpatterns = [
     path("api/auth/", include("apps.accounts.urls")),
     path("api/dashboard/", dashboard, name="dashboard"),
     path("api/config/", app_config, name="config"),
+    path("api/reports/", reports.report, name="report"),
+    path("api/reports/export/", reports.report_csv, name="report-export"),
+    path("api/team/", team.team, name="team"),
+    path("api/team/invites/", team.invite, name="team-invite"),
+    path("api/team/invites/<int:pk>/", team.revoke_invite, name="team-invite-revoke"),
+    path("api/team/members/<int:pk>/", team.member, name="team-member"),
     path("api/online-payments/", online_payments, name="online-payments"),
     path("api/online-payments/test/", test_online_payments, name="online-payments-test"),
+    path("api/zra/", zra_device, name="zra-device"),
+    path("api/zra/test/", test_zra_device, name="zra-device-test"),
     path("api/webhooks/whatsapp/", whatsapp_webhook, name="whatsapp-webhook"),
     path("api/webhooks/lenco/<uuid:webhook_id>/", lenco_webhook, name="lenco-webhook"),
     # Email provider tracking webhooks (anymail), e.g. /api/webhooks/email/resend/tracking/

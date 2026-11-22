@@ -2,7 +2,7 @@ import { AlertTriangle, CircleDollarSign, FilePlus2, FileText, Wallet } from "lu
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 
-import { useMe } from "@/api/auth";
+import { useAccess, useMe } from "@/api/auth";
 import { useDashboard, type Dashboard } from "@/api/resources";
 import { EmptyState, PageHeader } from "@/components/page";
 import { StatusBadge } from "@/components/status-badge";
@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate } from "@/lib/dates";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
+import { useT } from "@/i18n";
 
 function amounts(rows: Dashboard["owed"]): string {
   if (!rows.length) return formatMoney(0);
@@ -59,20 +60,24 @@ function Stat({
 
 export function DashboardPage() {
   const { data: me } = useMe();
+  const { canWrite } = useAccess();
+  const t = useT();
   const { data, isLoading } = useDashboard();
   const overdueCount = data?.overdue.reduce((n, r) => n + r.count, 0) ?? 0;
 
   return (
     <div className="grid gap-6">
       <PageHeader
-        title={`Hello${me?.user.full_name ? `, ${me.user.full_name.split(" ")[0]}` : ""}`}
-        description="Who owes you, and who has paid."
+        title={`${t("dash.hello")}${me?.user.full_name ? `, ${me.user.full_name.split(" ")[0]}` : ""}`}
+        description={t("dash.subtitle")}
         actions={
-          <Button asChild>
-            <Link to="/invoices/new">
-              <FilePlus2 /> New invoice
-            </Link>
-          </Button>
+          canWrite && (
+            <Button asChild>
+              <Link to="/invoices/new">
+                <FilePlus2 /> {t("action.newInvoice")}
+              </Link>
+            </Button>
+          )
         }
       />
 
@@ -171,9 +176,11 @@ export function DashboardPage() {
             ) : (
               !isLoading && (
                 <EmptyState icon={<FileText />} title="No invoices yet">
-                  <Button asChild size="sm">
-                    <Link to="/invoices/new">Create your first invoice</Link>
-                  </Button>
+                  {canWrite && (
+                    <Button asChild size="sm">
+                      <Link to="/invoices/new">Create your first invoice</Link>
+                    </Button>
+                  )}
                 </EmptyState>
               )
             )}

@@ -39,3 +39,22 @@ def format_money(amount: int, currency: str = "ZMW") -> str:
     sign = "-" if amount < 0 else ""
     major, minor = divmod(abs(amount), 100)
     return f"{sign}{symbol}{major:,}.{minor:02d}"
+
+
+def to_kwacha(amount: int, currency: str, rate: Decimal | None) -> int | None:
+    """Convert minor units of `currency` to ngwee at `rate` (Kwacha per unit), rounding half up.
+
+    Every supported currency has 100 minor units, so the rate applies to minor units directly.
+    """
+    if currency == "ZMW":
+        return amount
+    if rate is None:
+        return None
+    return round_half_up(Decimal(amount) * rate)
+
+
+def format_rate(rate: Decimal) -> str:
+    """27.5000 → "27.50", 26.8512 → "26.8512": at least two decimals, no trailing zeros beyond."""
+    text = f"{rate:,.4f}".rstrip("0")
+    whole, _, frac = text.partition(".")
+    return f"{whole}.{frac.ljust(2, '0')}"

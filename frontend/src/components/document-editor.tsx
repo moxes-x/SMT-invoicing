@@ -173,6 +173,22 @@ export function DocumentEditor({
                 <option value="USD">US Dollar (USD)</option>
               </Select>
             </FormField>
+            {mode === "invoice" && currency !== "ZMW" && (
+              <FormField
+                id="exchange_rate"
+                label={`Exchange rate (K per ${prefix.trim() || currency + " "}1)`}
+                error={errors.exchange_rate?.message}
+                hint="Optional. Shows the Kwacha total on the invoice and counts it in Kwacha reports."
+              >
+                <Input
+                  id="exchange_rate"
+                  inputMode="decimal"
+                  placeholder="e.g. 26.85"
+                  aria-invalid={!!errors.exchange_rate}
+                  {...form.register("exchange_rate")}
+                />
+              </FormField>
+            )}
           </CardContent>
         </Card>
 
@@ -489,7 +505,7 @@ function applyServerErrors(err: unknown, form: UseFormReturn<EditorValues>): str
   let message: string | null = null;
   for (const [key, msgs] of Object.entries(err.fields)) {
     const field = key === "valid_until" ? "due_date" : key;
-    if ((DATE_FIELDS as readonly string[]).includes(field)) {
+    if ((DATE_FIELDS as readonly string[]).includes(field) || field === "exchange_rate") {
       form.setError(field as keyof EditorValues, { message: msgs[0] });
     } else if (key === "lines") {
       message ??= "Check the lines.";
