@@ -1,9 +1,13 @@
 import logging
 from typing import Any
 
+from django.conf import settings
 from django.db import transaction
+from kombu.exceptions import OperationalError
 
 logger = logging.getLogger(__name__)
+
+BROKER_ERRORS = (OperationalError, ConnectionError, OSError)
 
 
 def enqueue_on_commit(task: Any, *args: Any) -> None:
@@ -14,9 +18,12 @@ def enqueue_on_commit(task: Any, *args: Any) -> None:
     """
 
     def _send() -> None:
+        if settings.CELERY_TASK_ALWAYS_EAGER:
+            task.delay(*args)  # runs inline already; let task errors surface
+            return
         try:
             task.delay(*args)
-        except Exception:  # broker down
+        except BROKER_ERRORS:
             logger.warning("Broker unavailable; running %s inline", task.name, exc_info=True)
             task.apply(args=args)
 

@@ -267,6 +267,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/Me'
           description: ''
+  /api/config/:
+    get:
+      operationId: config_retrieve
+      description: What this server can do, so the app shows only working options.
+      tags:
+      - config
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Config'
+          description: ''
   /api/customers/:
     get:
       operationId: customers_list
@@ -728,6 +743,57 @@ paths:
               schema:
                 $ref: '#/components/schemas/Invoice'
           description: ''
+  /api/invoices/{id}/deliver/:
+    post:
+      operationId: invoices_deliver_create
+      description: 'Send the invoice: wa.me link, WhatsApp Cloud API, or email. Marks
+        it sent.'
+      parameters:
+      - in: query
+        name: customer
+        schema:
+          type: integer
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - draft
+          - overdue
+          - paid
+          - partial
+          - sent
+          - unpaid
+          - void
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendRequestRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendResult'
+          description: ''
   /api/invoices/{id}/email/:
     post:
       operationId: invoices_email_create
@@ -914,6 +980,107 @@ paths:
       - cookieAuth: []
       responses:
         '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+          description: ''
+  /api/invoices/{id}/remind/:
+    post:
+      operationId: invoices_remind_create
+      description: Send a payment reminder now (one tap).
+      parameters:
+      - in: query
+        name: customer
+        schema:
+          type: integer
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - draft
+          - overdue
+          - paid
+          - partial
+          - sent
+          - unpaid
+          - void
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendRequestRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendResult'
+          description: ''
+  /api/invoices/{id}/reminders/:
+    post:
+      operationId: invoices_reminders_create
+      description: Turn automatic reminders off (or back on) for this invoice. Allowed
+        after sending.
+      parameters:
+      - in: query
+        name: customer
+        schema:
+          type: integer
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - draft
+          - overdue
+          - paid
+          - partial
+          - sent
+          - unpaid
+          - void
+      tags:
+      - invoices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemindersPausedRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RemindersPausedRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RemindersPausedRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
           content:
             application/json:
               schema:
@@ -1305,6 +1472,615 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/quotes/:
+    get:
+      operationId: quotes_list
+      description: |-
+        Filters every queryset by request.business and stamps it on create.
+
+        Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+        which avoids leaking whether an id exists.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - accepted
+          - converted
+          - declined
+          - draft
+          - expired
+          - open
+          - sent
+      tags:
+      - quotes
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedQuoteListList'
+          description: ''
+    post:
+      operationId: quotes_create
+      description: |-
+        Filters every queryset by request.business and stamps it on create.
+
+        Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+        which avoids leaking whether an id exists.
+      parameters:
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - accepted
+          - converted
+          - declined
+          - draft
+          - expired
+          - open
+          - sent
+      tags:
+      - quotes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuoteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/QuoteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/QuoteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+          description: ''
+  /api/quotes/{id}/:
+    get:
+      operationId: quotes_retrieve
+      description: |-
+        Filters every queryset by request.business and stamps it on create.
+
+        Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+        which avoids leaking whether an id exists.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - accepted
+          - converted
+          - declined
+          - draft
+          - expired
+          - open
+          - sent
+      tags:
+      - quotes
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+          description: ''
+    put:
+      operationId: quotes_update
+      description: |-
+        Filters every queryset by request.business and stamps it on create.
+
+        Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+        which avoids leaking whether an id exists.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - accepted
+          - converted
+          - declined
+          - draft
+          - expired
+          - open
+          - sent
+      tags:
+      - quotes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuoteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/QuoteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/QuoteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+          description: ''
+    patch:
+      operationId: quotes_partial_update
+      description: |-
+        Filters every queryset by request.business and stamps it on create.
+
+        Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+        which avoids leaking whether an id exists.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - accepted
+          - converted
+          - declined
+          - draft
+          - expired
+          - open
+          - sent
+      tags:
+      - quotes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedQuoteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedQuoteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedQuoteRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+          description: ''
+  /api/quotes/{id}/convert/:
+    post:
+      operationId: quotes_convert_create
+      description: |-
+        Filters every queryset by request.business and stamps it on create.
+
+        Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+        which avoids leaking whether an id exists.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - accepted
+          - converted
+          - declined
+          - draft
+          - expired
+          - open
+          - sent
+      tags:
+      - quotes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConvertRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConvertRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConvertRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceRef'
+          description: ''
+  /api/quotes/{id}/deliver/:
+    post:
+      operationId: quotes_deliver_create
+      description: |-
+        Filters every queryset by request.business and stamps it on create.
+
+        Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+        which avoids leaking whether an id exists.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - accepted
+          - converted
+          - declined
+          - draft
+          - expired
+          - open
+          - sent
+      tags:
+      - quotes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendRequestRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendResult'
+          description: ''
+  /api/quotes/{id}/pdf/:
+    get:
+      operationId: quotes_pdf_retrieve
+      description: |-
+        Filters every queryset by request.business and stamps it on create.
+
+        Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+        which avoids leaking whether an id exists.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - accepted
+          - converted
+          - declined
+          - draft
+          - expired
+          - open
+          - sent
+      tags:
+      - quotes
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+          description: ''
+  /api/quotes/{id}/respond/:
+    post:
+      operationId: quotes_respond_create
+      description: Record the customer's answer on their behalf (e.g. they said yes
+        on the phone).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - accepted
+          - converted
+          - declined
+          - draft
+          - expired
+          - open
+          - sent
+      tags:
+      - quotes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RespondRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RespondRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RespondRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+          description: ''
+  /api/quotes/{id}/send/:
+    post:
+      operationId: quotes_send_create
+      description: |-
+        Filters every queryset by request.business and stamps it on create.
+
+        Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+        which avoids leaking whether an id exists.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - accepted
+          - converted
+          - declined
+          - draft
+          - expired
+          - open
+          - sent
+      tags:
+      - quotes
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+          description: ''
+  /api/recurring/:
+    get:
+      operationId: recurring_list
+      description: Schedules. Deleting one keeps the invoices it already made.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - recurring
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRecurringInvoiceList'
+          description: ''
+    post:
+      operationId: recurring_create
+      description: Schedules. Deleting one keeps the invoices it already made.
+      tags:
+      - recurring
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecurringInvoiceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RecurringInvoiceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RecurringInvoiceRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecurringInvoice'
+          description: ''
+  /api/recurring/{id}/:
+    get:
+      operationId: recurring_retrieve
+      description: Schedules. Deleting one keeps the invoices it already made.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - recurring
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecurringInvoice'
+          description: ''
+    put:
+      operationId: recurring_update
+      description: Schedules. Deleting one keeps the invoices it already made.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - recurring
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecurringInvoiceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RecurringInvoiceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RecurringInvoiceRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecurringInvoice'
+          description: ''
+    patch:
+      operationId: recurring_partial_update
+      description: Schedules. Deleting one keeps the invoices it already made.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - recurring
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRecurringInvoiceRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRecurringInvoiceRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRecurringInvoiceRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecurringInvoice'
+          description: ''
+    delete:
+      operationId: recurring_destroy
+      description: Schedules. Deleting one keeps the invoices it already made.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - recurring
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
 components:
   schemas:
     ActivityLog:
@@ -1381,6 +2157,16 @@ components:
           description: Bank / MTN MoMo / Airtel Money details printed on invoices.
         default_currency:
           $ref: '#/components/schemas/CurrencyEnum'
+        auto_reminders:
+          type: boolean
+        reminder_interval_days:
+          type: integer
+          maximum: 60
+          minimum: 1
+        max_reminders:
+          type: integer
+          maximum: 10
+          minimum: 1
         role:
           type: string
           nullable: true
@@ -1434,8 +2220,34 @@ components:
           description: Bank / MTN MoMo / Airtel Money details printed on invoices.
         default_currency:
           $ref: '#/components/schemas/CurrencyEnum'
+        auto_reminders:
+          type: boolean
+        reminder_interval_days:
+          type: integer
+          maximum: 60
+          minimum: 1
+        max_reminders:
+          type: integer
+          maximum: 10
+          minimum: 1
       required:
       - name
+    Config:
+      type: object
+      properties:
+        whatsapp_api:
+          type: boolean
+          description: Automatic WhatsApp sending is set up
+      required:
+      - whatsapp_api
+    ConvertRequest:
+      type: object
+      properties:
+        days_until_due:
+          type: integer
+          maximum: 120
+          minimum: 0
+          default: 14
     CurrencyEnum:
       enum:
       - ZMW
@@ -1597,35 +2409,71 @@ components:
       properties:
         id:
           type: integer
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/KindEnum'
+          readOnly: true
         channel:
-          type: string
+          allOf:
+          - $ref: '#/components/schemas/DeliveryChannelEnum'
+          readOnly: true
         recipient:
           type: string
+          readOnly: true
         status:
+          allOf:
+          - $ref: '#/components/schemas/DeliveryStatusEnum'
+          readOnly: true
+        automatic:
+          type: boolean
+          readOnly: true
+          description: Sent by a scheduled job
+        error:
           type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
       required:
+      - automatic
       - channel
+      - created_at
+      - error
       - id
+      - kind
       - recipient
       - status
-    DisplayStatusEnum:
+      - updated_at
+    DeliveryChannelEnum:
       enum:
-      - draft
-      - sent
-      - viewed
-      - partial
-      - paid
-      - overdue
-      - void
+      - whatsapp
+      - email
       type: string
       description: |-
-        * `draft` - Draft
+        * `whatsapp` - WhatsApp
+        * `email` - Email
+    DeliveryStatusEnum:
+      enum:
+      - queued
+      - shared
+      - sent
+      - delivered
+      - read
+      - failed
+      type: string
+      description: |-
+        * `queued` - Queued
+        * `shared` - Shared
         * `sent` - Sent
-        * `viewed` - Viewed
-        * `partial` - Partly paid
-        * `paid` - Paid
-        * `overdue` - Overdue
-        * `void` - Void
+        * `delivered` - Delivered
+        * `read` - Read
+        * `failed` - Failed
     EmailRequestRequest:
       type: object
       properties:
@@ -1636,6 +2484,14 @@ components:
         message:
           type: string
           maxLength: 1000
+    FrequencyEnum:
+      enum:
+      - weekly
+      - monthly
+      type: string
+      description: |-
+        * `weekly` - Weekly
+        * `monthly` - Monthly
     Health:
       type: object
       properties:
@@ -1657,11 +2513,11 @@ components:
           readOnly: true
         status:
           allOf:
-          - $ref: '#/components/schemas/StatusEnum'
+          - $ref: '#/components/schemas/InvoiceStatusEnum'
           readOnly: true
         display_status:
           allOf:
-          - $ref: '#/components/schemas/DisplayStatusEnum'
+          - $ref: '#/components/schemas/InvoiceDisplayStatusEnum'
           readOnly: true
         payment_status:
           allOf:
@@ -1742,6 +2598,26 @@ components:
           items:
             $ref: '#/components/schemas/Payment'
           readOnly: true
+        deliveries:
+          type: array
+          items:
+            $ref: '#/components/schemas/Delivery'
+          readOnly: true
+        reminders_paused:
+          type: boolean
+          readOnly: true
+        reminder_count:
+          type: integer
+          readOnly: true
+        from_quote:
+          allOf:
+          - $ref: '#/components/schemas/InvoiceRef'
+          nullable: true
+          readOnly: true
+        recurring_id:
+          type: integer
+          readOnly: true
+          nullable: true
         activity:
           type: array
           items:
@@ -1757,9 +2633,11 @@ components:
       - balance
       - created_at
       - customer
+      - deliveries
       - discount_total
       - display_status
       - due_date
+      - from_quote
       - id
       - is_locked
       - is_overdue
@@ -1768,8 +2646,11 @@ components:
       - payment_status
       - payments
       - public_url
+      - recurring_id
       - reissued_as
       - reissued_from
+      - reminder_count
+      - reminders_paused
       - sent_at
       - status
       - subtotal
@@ -1777,6 +2658,24 @@ components:
       - viewed_at
       - void_reason
       - voided_at
+    InvoiceDisplayStatusEnum:
+      enum:
+      - draft
+      - sent
+      - viewed
+      - partial
+      - paid
+      - overdue
+      - void
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `sent` - Sent
+        * `viewed` - Viewed
+        * `partial` - Partly paid
+        * `paid` - Paid
+        * `overdue` - Overdue
+        * `void` - Void
     InvoiceLine:
       type: object
       properties:
@@ -1857,11 +2756,11 @@ components:
           readOnly: true
         status:
           allOf:
-          - $ref: '#/components/schemas/StatusEnum'
+          - $ref: '#/components/schemas/InvoiceStatusEnum'
           readOnly: true
         display_status:
           allOf:
-          - $ref: '#/components/schemas/DisplayStatusEnum'
+          - $ref: '#/components/schemas/InvoiceDisplayStatusEnum'
           readOnly: true
         payment_status:
           allOf:
@@ -1939,6 +2838,16 @@ components:
       - customer_id
       - due_date
       - lines
+    InvoiceStatusEnum:
+      enum:
+      - draft
+      - sent
+      - void
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `sent` - Sent
+        * `void` - Void
     Item:
       type: object
       properties:
@@ -1987,6 +2896,16 @@ components:
       required:
       - name
       - unit_price
+    KindEnum:
+      enum:
+      - invoice
+      - reminder
+      - quote
+      type: string
+      description: |-
+        * `invoice` - Invoice
+        * `reminder` - Reminder
+        * `quote` - Quote
     LoginRequest:
       type: object
       properties:
@@ -2160,6 +3079,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Payment'
+    PaginatedQuoteListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteList'
+    PaginatedRecurringInvoiceList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecurringInvoice'
     PatchedBusinessRequest:
       type: object
       properties:
@@ -2195,6 +3160,16 @@ components:
           description: Bank / MTN MoMo / Airtel Money details printed on invoices.
         default_currency:
           $ref: '#/components/schemas/CurrencyEnum'
+        auto_reminders:
+          type: boolean
+        reminder_interval_days:
+          type: integer
+          maximum: 60
+          minimum: 1
+        max_reminders:
+          type: integer
+          maximum: 10
+          minimum: 1
     PatchedCustomerRequest:
       type: object
       properties:
@@ -2251,6 +3226,61 @@ components:
           minimum: 0
           format: int64
           description: Minor units (ngwee).
+        is_active:
+          type: boolean
+    PatchedQuoteRequest:
+      type: object
+      properties:
+        currency:
+          $ref: '#/components/schemas/CurrencyEnum'
+        issue_date:
+          type: string
+          format: date
+        valid_until:
+          type: string
+          format: date
+        customer_id:
+          type: integer
+          writeOnly: true
+        notes:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteLineRequest'
+    PatchedRecurringInvoiceRequest:
+      type: object
+      properties:
+        customer_id:
+          type: integer
+          writeOnly: true
+        currency:
+          $ref: '#/components/schemas/CurrencyEnum'
+        frequency:
+          $ref: '#/components/schemas/FrequencyEnum'
+        interval:
+          type: integer
+          maximum: 12
+          minimum: 1
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        days_until_due:
+          type: integer
+          maximum: 120
+          minimum: 0
+        notes:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecurringLineRequest'
+        send_mode:
+          $ref: '#/components/schemas/SendModeEnum'
         is_active:
           type: boolean
     Payment:
@@ -2320,12 +3350,529 @@ components:
         * `unpaid` - Unpaid
         * `partial` - Partly paid
         * `paid` - Paid
+    Quote:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/QuoteStatusEnum'
+          readOnly: true
+        display_status:
+          allOf:
+          - $ref: '#/components/schemas/QuoteDisplayStatusEnum'
+          readOnly: true
+        customer:
+          allOf:
+          - $ref: '#/components/schemas/CustomerSummary'
+          readOnly: true
+        currency:
+          $ref: '#/components/schemas/CurrencyEnum'
+        issue_date:
+          type: string
+          format: date
+        valid_until:
+          type: string
+          format: date
+        total:
+          type: integer
+          readOnly: true
+        notes:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteLine'
+        subtotal:
+          type: integer
+          readOnly: true
+        discount_total:
+          type: integer
+          readOnly: true
+        is_editable:
+          type: boolean
+          readOnly: true
+        public_url:
+          type: string
+          readOnly: true
+        sent_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        viewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        responded_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        converted_invoice:
+          allOf:
+          - $ref: '#/components/schemas/InvoiceRef'
+          nullable: true
+          readOnly: true
+        deliveries:
+          type: array
+          items:
+            $ref: '#/components/schemas/Delivery'
+          readOnly: true
+        activity:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityLog'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - activity
+      - converted_invoice
+      - created_at
+      - customer
+      - deliveries
+      - discount_total
+      - display_status
+      - id
+      - is_editable
+      - lines
+      - number
+      - public_url
+      - responded_at
+      - sent_at
+      - status
+      - subtotal
+      - total
+      - valid_until
+      - viewed_at
+    QuoteDisplayStatusEnum:
+      enum:
+      - draft
+      - sent
+      - viewed
+      - accepted
+      - declined
+      - expired
+      - converted
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `sent` - Sent
+        * `viewed` - Viewed
+        * `accepted` - Accepted
+        * `declined` - Declined
+        * `expired` - Expired
+        * `converted` - Invoiced
+    QuoteLine:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        item:
+          type: integer
+          nullable: true
+        description:
+          type: string
+          maxLength: 500
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,9}(?:\.\d{0,3})?$
+        unit_price:
+          type: integer
+          maximum: 1000000000000
+          minimum: 1
+          format: int64
+          description: Minor units (ngwee).
+        discount:
+          type: integer
+          maximum: 1000000000000
+          minimum: 0
+          format: int64
+          default: 0
+          description: Minor units off this line.
+        amount:
+          type: integer
+          readOnly: true
+      required:
+      - amount
+      - description
+      - id
+      - quantity
+      - unit_price
+    QuoteLineRequest:
+      type: object
+      properties:
+        item:
+          type: integer
+          nullable: true
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,9}(?:\.\d{0,3})?$
+        unit_price:
+          type: integer
+          maximum: 1000000000000
+          minimum: 1
+          format: int64
+          description: Minor units (ngwee).
+        discount:
+          type: integer
+          maximum: 1000000000000
+          minimum: 0
+          format: int64
+          default: 0
+          description: Minor units off this line.
+      required:
+      - description
+      - quantity
+      - unit_price
+    QuoteList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/QuoteStatusEnum'
+          readOnly: true
+        display_status:
+          allOf:
+          - $ref: '#/components/schemas/QuoteDisplayStatusEnum'
+          readOnly: true
+        customer:
+          allOf:
+          - $ref: '#/components/schemas/CustomerSummary'
+          readOnly: true
+        currency:
+          allOf:
+          - $ref: '#/components/schemas/CurrencyEnum'
+          readOnly: true
+        issue_date:
+          type: string
+          format: date
+          readOnly: true
+        valid_until:
+          type: string
+          format: date
+          readOnly: true
+        total:
+          type: integer
+          readOnly: true
+      required:
+      - currency
+      - customer
+      - display_status
+      - id
+      - issue_date
+      - number
+      - status
+      - total
+      - valid_until
+    QuoteRequest:
+      type: object
+      properties:
+        currency:
+          $ref: '#/components/schemas/CurrencyEnum'
+        issue_date:
+          type: string
+          format: date
+        valid_until:
+          type: string
+          format: date
+        customer_id:
+          type: integer
+          writeOnly: true
+        notes:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteLineRequest'
+      required:
+      - customer_id
+      - lines
+      - valid_until
+    QuoteStatusEnum:
+      enum:
+      - draft
+      - sent
+      - accepted
+      - declined
+      - converted
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `sent` - Sent
+        * `accepted` - Accepted
+        * `declined` - Declined
+        * `converted` - Converted to invoice
     ReasonRequest:
       type: object
       properties:
         reason:
           type: string
           maxLength: 300
+    RecurringInvoice:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        customer:
+          allOf:
+          - $ref: '#/components/schemas/CustomerSummary'
+          readOnly: true
+        currency:
+          $ref: '#/components/schemas/CurrencyEnum'
+        frequency:
+          $ref: '#/components/schemas/FrequencyEnum'
+        interval:
+          type: integer
+          maximum: 12
+          minimum: 1
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        days_until_due:
+          type: integer
+          maximum: 120
+          minimum: 0
+        notes:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecurringLine'
+        send_mode:
+          $ref: '#/components/schemas/SendModeEnum'
+        is_active:
+          type: boolean
+        next_run_date:
+          type: string
+          format: date
+          readOnly: true
+        runs:
+          type: integer
+          readOnly: true
+          description: Invoices generated so far
+        last_run_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        total:
+          type: integer
+          readOnly: true
+        upcoming:
+          type: array
+          items:
+            type: string
+            format: date
+          readOnly: true
+        invoice_count:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - customer
+      - frequency
+      - id
+      - invoice_count
+      - last_run_at
+      - lines
+      - next_run_date
+      - runs
+      - start_date
+      - total
+      - upcoming
+    RecurringInvoiceRequest:
+      type: object
+      properties:
+        customer_id:
+          type: integer
+          writeOnly: true
+        currency:
+          $ref: '#/components/schemas/CurrencyEnum'
+        frequency:
+          $ref: '#/components/schemas/FrequencyEnum'
+        interval:
+          type: integer
+          maximum: 12
+          minimum: 1
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+          nullable: true
+        days_until_due:
+          type: integer
+          maximum: 120
+          minimum: 0
+        notes:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecurringLineRequest'
+        send_mode:
+          $ref: '#/components/schemas/SendModeEnum'
+        is_active:
+          type: boolean
+      required:
+      - customer_id
+      - frequency
+      - lines
+      - start_date
+    RecurringLine:
+      type: object
+      description: Same rules as an invoice line; stored as JSON on the schedule.
+      properties:
+        item:
+          type: integer
+          nullable: true
+        description:
+          type: string
+          maxLength: 500
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,9}(?:\.\d{0,3})?$
+        unit_price:
+          type: integer
+          maximum: 1000000000000
+          minimum: 1
+          format: int64
+        discount:
+          type: integer
+          maximum: 1000000000000
+          minimum: 0
+          format: int64
+          default: 0
+      required:
+      - description
+      - quantity
+      - unit_price
+    RecurringLineRequest:
+      type: object
+      description: Same rules as an invoice line; stored as JSON on the schedule.
+      properties:
+        item:
+          type: integer
+          nullable: true
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,9}(?:\.\d{0,3})?$
+        unit_price:
+          type: integer
+          maximum: 1000000000000
+          minimum: 1
+          format: int64
+        discount:
+          type: integer
+          maximum: 1000000000000
+          minimum: 0
+          format: int64
+          default: 0
+      required:
+      - description
+      - quantity
+      - unit_price
+    RemindersPausedRequest:
+      type: object
+      properties:
+        paused:
+          type: boolean
+      required:
+      - paused
+    RespondRequest:
+      type: object
+      properties:
+        accepted:
+          type: boolean
+      required:
+      - accepted
+    SendModeEnum:
+      enum:
+      - draft
+      - email
+      - whatsapp
+      type: string
+      description: |-
+        * `draft` - Create a draft for me to review
+        * `email` - Send automatically by email
+        * `whatsapp` - Send automatically on WhatsApp
+    SendRequestChannelEnum:
+      enum:
+      - whatsapp_link
+      - whatsapp
+      - email
+      type: string
+      description: |-
+        * `whatsapp_link` - whatsapp_link
+        * `whatsapp` - whatsapp
+        * `email` - email
+    SendRequestRequest:
+      type: object
+      description: How to send. `whatsapp_link` returns a wa.me URL; the others queue
+        a send.
+      properties:
+        channel:
+          $ref: '#/components/schemas/SendRequestChannelEnum'
+        to:
+          type: string
+          format: email
+          minLength: 1
+          description: Email only; defaults to the customer's
+        message:
+          type: string
+          maxLength: 1000
+      required:
+      - channel
+    SendResult:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+          description: wa.me link (whatsapp_link only)
+        message:
+          type: string
+        delivery:
+          $ref: '#/components/schemas/Delivery'
     SignupRequest:
       type: object
       properties:
@@ -2343,16 +3890,6 @@ components:
       required:
       - email
       - password
-    StatusEnum:
-      enum:
-      - draft
-      - sent
-      - void
-      type: string
-      description: |-
-        * `draft` - Draft
-        * `sent` - Sent
-        * `void` - Void
     User:
       type: object
       properties:
@@ -2382,6 +3919,14 @@ components:
       - payment_deleted
       - voided
       - reissued
+      - reminded
+      - delivered
+      - read
+      - delivery_failed
+      - accepted
+      - declined
+      - converted
+      - generated
       type: string
       description: |-
         * `created` - Created
@@ -2395,6 +3940,14 @@ components:
         * `payment_deleted` - Payment deleted
         * `voided` - Voided
         * `reissued` - Reissued
+        * `reminded` - Reminder sent
+        * `delivered` - Delivered
+        * `read` - Read
+        * `delivery_failed` - Delivery failed
+        * `accepted` - Accepted
+        * `declined` - Declined
+        * `converted` - Converted to invoice
+        * `generated` - Generated from schedule
     WhatsAppShare:
       type: object
       properties:

@@ -140,6 +140,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/config/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description What this server can do, so the app shows only working options. */
+        get: operations["config_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/customers/": {
         parameters: {
             query?: never;
@@ -277,6 +294,23 @@ export interface paths {
         patch: operations["invoices_partial_update"];
         trace?: never;
     };
+    "/api/invoices/{id}/deliver/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Send the invoice: wa.me link, WhatsApp Cloud API, or email. Marks it sent. */
+        post: operations["invoices_deliver_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/invoices/{id}/email/": {
         parameters: {
             query?: never;
@@ -339,6 +373,40 @@ export interface paths {
         put?: never;
         /** @description Invoices are never deleted, only voided, so the numbering has no unexplained gaps. */
         post: operations["invoices_reissue_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invoices/{id}/remind/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Send a payment reminder now (one tap). */
+        post: operations["invoices_remind_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invoices/{id}/reminders/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Turn automatic reminders off (or back on) for this invoice. Allowed after sending. */
+        post: operations["invoices_reminders_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -499,6 +567,211 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/quotes/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        get: operations["quotes_list"];
+        put?: never;
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        post: operations["quotes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quotes/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        get: operations["quotes_retrieve"];
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        put: operations["quotes_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        patch: operations["quotes_partial_update"];
+        trace?: never;
+    };
+    "/api/quotes/{id}/convert/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        post: operations["quotes_convert_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quotes/{id}/deliver/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        post: operations["quotes_deliver_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quotes/{id}/pdf/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        get: operations["quotes_pdf_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quotes/{id}/respond/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Record the customer's answer on their behalf (e.g. they said yes on the phone). */
+        post: operations["quotes_respond_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/quotes/{id}/send/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        post: operations["quotes_send_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recurring/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Schedules. Deleting one keeps the invoices it already made. */
+        get: operations["recurring_list"];
+        put?: never;
+        /** @description Schedules. Deleting one keeps the invoices it already made. */
+        post: operations["recurring_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recurring/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Schedules. Deleting one keeps the invoices it already made. */
+        get: operations["recurring_retrieve"];
+        /** @description Schedules. Deleting one keeps the invoices it already made. */
+        put: operations["recurring_update"];
+        post?: never;
+        /** @description Schedules. Deleting one keeps the invoices it already made. */
+        delete: operations["recurring_destroy"];
+        options?: never;
+        head?: never;
+        /** @description Schedules. Deleting one keeps the invoices it already made. */
+        patch: operations["recurring_partial_update"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -527,6 +800,9 @@ export interface components {
             /** @description Bank / MTN MoMo / Airtel Money details printed on invoices. */
             payment_details?: string;
             default_currency?: components["schemas"]["CurrencyEnum"];
+            auto_reminders?: boolean;
+            reminder_interval_days?: number;
+            max_reminders?: number;
             readonly role: string | null;
             readonly compliance_notice: string | null;
             /** Format: date-time */
@@ -543,6 +819,17 @@ export interface components {
             /** @description Bank / MTN MoMo / Airtel Money details printed on invoices. */
             payment_details?: string;
             default_currency?: components["schemas"]["CurrencyEnum"];
+            auto_reminders?: boolean;
+            reminder_interval_days?: number;
+            max_reminders?: number;
+        };
+        Config: {
+            /** @description Automatic WhatsApp sending is set up */
+            whatsapp_api: boolean;
+        };
+        ConvertRequest: {
+            /** @default 14 */
+            days_until_due: number;
         };
         /**
          * @description * `ZMW` - Zambian Kwacha
@@ -596,27 +883,46 @@ export interface components {
             invoices: number;
         };
         Delivery: {
-            id: number;
-            channel: string;
-            recipient: string;
-            status: string;
+            readonly id: number;
+            readonly kind: components["schemas"]["KindEnum"];
+            readonly channel: components["schemas"]["DeliveryChannelEnum"];
+            readonly recipient: string;
+            readonly status: components["schemas"]["DeliveryStatusEnum"];
+            /** @description Sent by a scheduled job */
+            readonly automatic: boolean;
+            readonly error: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
         };
         /**
-         * @description * `draft` - Draft
-         *     * `sent` - Sent
-         *     * `viewed` - Viewed
-         *     * `partial` - Partly paid
-         *     * `paid` - Paid
-         *     * `overdue` - Overdue
-         *     * `void` - Void
+         * @description * `whatsapp` - WhatsApp
+         *     * `email` - Email
          * @enum {string}
          */
-        DisplayStatusEnum: "draft" | "sent" | "viewed" | "partial" | "paid" | "overdue" | "void";
+        DeliveryChannelEnum: "whatsapp" | "email";
+        /**
+         * @description * `queued` - Queued
+         *     * `shared` - Shared
+         *     * `sent` - Sent
+         *     * `delivered` - Delivered
+         *     * `read` - Read
+         *     * `failed` - Failed
+         * @enum {string}
+         */
+        DeliveryStatusEnum: "queued" | "shared" | "sent" | "delivered" | "read" | "failed";
         EmailRequestRequest: {
             /** Format: email */
             to?: string;
             message?: string;
         };
+        /**
+         * @description * `weekly` - Weekly
+         *     * `monthly` - Monthly
+         * @enum {string}
+         */
+        FrequencyEnum: "weekly" | "monthly";
         Health: {
             status: string;
             database: string;
@@ -624,8 +930,8 @@ export interface components {
         Invoice: {
             readonly id: number;
             readonly number: string;
-            readonly status: components["schemas"]["StatusEnum"];
-            readonly display_status: components["schemas"]["DisplayStatusEnum"];
+            readonly status: components["schemas"]["InvoiceStatusEnum"];
+            readonly display_status: components["schemas"]["InvoiceDisplayStatusEnum"];
             readonly payment_status: components["schemas"]["PaymentStatusEnum"];
             readonly customer: components["schemas"]["CustomerSummary"];
             currency?: components["schemas"]["CurrencyEnum"];
@@ -653,10 +959,26 @@ export interface components {
             readonly reissued_from: components["schemas"]["InvoiceRef"] | null;
             readonly reissued_as: components["schemas"]["InvoiceRef"] | null;
             readonly payments: components["schemas"]["Payment"][];
+            readonly deliveries: components["schemas"]["Delivery"][];
+            readonly reminders_paused: boolean;
+            readonly reminder_count: number;
+            readonly from_quote: components["schemas"]["InvoiceRef"] | null;
+            readonly recurring_id: number | null;
             readonly activity: components["schemas"]["ActivityLog"][];
             /** Format: date-time */
             readonly created_at: string;
         };
+        /**
+         * @description * `draft` - Draft
+         *     * `sent` - Sent
+         *     * `viewed` - Viewed
+         *     * `partial` - Partly paid
+         *     * `paid` - Paid
+         *     * `overdue` - Overdue
+         *     * `void` - Void
+         * @enum {string}
+         */
+        InvoiceDisplayStatusEnum: "draft" | "sent" | "viewed" | "partial" | "paid" | "overdue" | "void";
         InvoiceLine: {
             readonly id: number;
             item?: number | null;
@@ -696,8 +1018,8 @@ export interface components {
         InvoiceList: {
             readonly id: number;
             readonly number: string;
-            readonly status: components["schemas"]["StatusEnum"];
-            readonly display_status: components["schemas"]["DisplayStatusEnum"];
+            readonly status: components["schemas"]["InvoiceStatusEnum"];
+            readonly display_status: components["schemas"]["InvoiceDisplayStatusEnum"];
             readonly payment_status: components["schemas"]["PaymentStatusEnum"];
             readonly customer: components["schemas"]["CustomerSummary"];
             readonly currency: components["schemas"]["CurrencyEnum"];
@@ -723,6 +1045,13 @@ export interface components {
             notes?: string;
             lines: components["schemas"]["InvoiceLineRequest"][];
         };
+        /**
+         * @description * `draft` - Draft
+         *     * `sent` - Sent
+         *     * `void` - Void
+         * @enum {string}
+         */
+        InvoiceStatusEnum: "draft" | "sent" | "void";
         Item: {
             readonly id: number;
             name: string;
@@ -746,6 +1075,13 @@ export interface components {
             unit_price: number;
             is_active?: boolean;
         };
+        /**
+         * @description * `invoice` - Invoice
+         *     * `reminder` - Reminder
+         *     * `quote` - Quote
+         * @enum {string}
+         */
+        KindEnum: "invoice" | "reminder" | "quote";
         LoginRequest: {
             /** Format: email */
             email: string;
@@ -845,6 +1181,36 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Payment"][];
         };
+        PaginatedQuoteListList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["QuoteList"][];
+        };
+        PaginatedRecurringInvoiceList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["RecurringInvoice"][];
+        };
         PatchedBusinessRequest: {
             name?: string;
             email?: string;
@@ -856,6 +1222,9 @@ export interface components {
             /** @description Bank / MTN MoMo / Airtel Money details printed on invoices. */
             payment_details?: string;
             default_currency?: components["schemas"]["CurrencyEnum"];
+            auto_reminders?: boolean;
+            reminder_interval_days?: number;
+            max_reminders?: number;
         };
         PatchedCustomerRequest: {
             name?: string;
@@ -882,6 +1251,31 @@ export interface components {
              * @description Minor units (ngwee).
              */
             unit_price?: number;
+            is_active?: boolean;
+        };
+        PatchedQuoteRequest: {
+            currency?: components["schemas"]["CurrencyEnum"];
+            /** Format: date */
+            issue_date?: string;
+            /** Format: date */
+            valid_until?: string;
+            customer_id?: number;
+            notes?: string;
+            lines?: components["schemas"]["QuoteLineRequest"][];
+        };
+        PatchedRecurringInvoiceRequest: {
+            customer_id?: number;
+            currency?: components["schemas"]["CurrencyEnum"];
+            frequency?: components["schemas"]["FrequencyEnum"];
+            interval?: number;
+            /** Format: date */
+            start_date?: string;
+            /** Format: date */
+            end_date?: string | null;
+            days_until_due?: number;
+            notes?: string;
+            lines?: components["schemas"]["RecurringLineRequest"][];
+            send_mode?: components["schemas"]["SendModeEnum"];
             is_active?: boolean;
         };
         Payment: {
@@ -919,8 +1313,226 @@ export interface components {
          * @enum {string}
          */
         PaymentStatusEnum: "unpaid" | "partial" | "paid";
+        Quote: {
+            readonly id: number;
+            readonly number: string;
+            readonly status: components["schemas"]["QuoteStatusEnum"];
+            readonly display_status: components["schemas"]["QuoteDisplayStatusEnum"];
+            readonly customer: components["schemas"]["CustomerSummary"];
+            currency?: components["schemas"]["CurrencyEnum"];
+            /** Format: date */
+            issue_date?: string;
+            /** Format: date */
+            valid_until: string;
+            readonly total: number;
+            notes?: string;
+            lines: components["schemas"]["QuoteLine"][];
+            readonly subtotal: number;
+            readonly discount_total: number;
+            readonly is_editable: boolean;
+            readonly public_url: string;
+            /** Format: date-time */
+            readonly sent_at: string | null;
+            /** Format: date-time */
+            readonly viewed_at: string | null;
+            /** Format: date-time */
+            readonly responded_at: string | null;
+            readonly converted_invoice: components["schemas"]["InvoiceRef"] | null;
+            readonly deliveries: components["schemas"]["Delivery"][];
+            readonly activity: components["schemas"]["ActivityLog"][];
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `draft` - Draft
+         *     * `sent` - Sent
+         *     * `viewed` - Viewed
+         *     * `accepted` - Accepted
+         *     * `declined` - Declined
+         *     * `expired` - Expired
+         *     * `converted` - Invoiced
+         * @enum {string}
+         */
+        QuoteDisplayStatusEnum: "draft" | "sent" | "viewed" | "accepted" | "declined" | "expired" | "converted";
+        QuoteLine: {
+            readonly id: number;
+            item?: number | null;
+            description: string;
+            /** Format: decimal */
+            quantity: string;
+            /**
+             * Format: int64
+             * @description Minor units (ngwee).
+             */
+            unit_price: number;
+            /**
+             * Format: int64
+             * @description Minor units off this line.
+             * @default 0
+             */
+            discount: number;
+            readonly amount: number;
+        };
+        QuoteLineRequest: {
+            item?: number | null;
+            description: string;
+            /** Format: decimal */
+            quantity: string;
+            /**
+             * Format: int64
+             * @description Minor units (ngwee).
+             */
+            unit_price: number;
+            /**
+             * Format: int64
+             * @description Minor units off this line.
+             * @default 0
+             */
+            discount: number;
+        };
+        QuoteList: {
+            readonly id: number;
+            readonly number: string;
+            readonly status: components["schemas"]["QuoteStatusEnum"];
+            readonly display_status: components["schemas"]["QuoteDisplayStatusEnum"];
+            readonly customer: components["schemas"]["CustomerSummary"];
+            readonly currency: components["schemas"]["CurrencyEnum"];
+            /** Format: date */
+            readonly issue_date: string;
+            /** Format: date */
+            readonly valid_until: string;
+            readonly total: number;
+        };
+        QuoteRequest: {
+            currency?: components["schemas"]["CurrencyEnum"];
+            /** Format: date */
+            issue_date?: string;
+            /** Format: date */
+            valid_until: string;
+            customer_id: number;
+            notes?: string;
+            lines: components["schemas"]["QuoteLineRequest"][];
+        };
+        /**
+         * @description * `draft` - Draft
+         *     * `sent` - Sent
+         *     * `accepted` - Accepted
+         *     * `declined` - Declined
+         *     * `converted` - Converted to invoice
+         * @enum {string}
+         */
+        QuoteStatusEnum: "draft" | "sent" | "accepted" | "declined" | "converted";
         ReasonRequest: {
             reason?: string;
+        };
+        RecurringInvoice: {
+            readonly id: number;
+            readonly customer: components["schemas"]["CustomerSummary"];
+            currency?: components["schemas"]["CurrencyEnum"];
+            frequency: components["schemas"]["FrequencyEnum"];
+            interval?: number;
+            /** Format: date */
+            start_date: string;
+            /** Format: date */
+            end_date?: string | null;
+            days_until_due?: number;
+            notes?: string;
+            lines: components["schemas"]["RecurringLine"][];
+            send_mode?: components["schemas"]["SendModeEnum"];
+            is_active?: boolean;
+            /** Format: date */
+            readonly next_run_date: string;
+            /** @description Invoices generated so far */
+            readonly runs: number;
+            /** Format: date-time */
+            readonly last_run_at: string | null;
+            readonly total: number;
+            readonly upcoming: string[];
+            readonly invoice_count: number;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        RecurringInvoiceRequest: {
+            customer_id: number;
+            currency?: components["schemas"]["CurrencyEnum"];
+            frequency: components["schemas"]["FrequencyEnum"];
+            interval?: number;
+            /** Format: date */
+            start_date: string;
+            /** Format: date */
+            end_date?: string | null;
+            days_until_due?: number;
+            notes?: string;
+            lines: components["schemas"]["RecurringLineRequest"][];
+            send_mode?: components["schemas"]["SendModeEnum"];
+            is_active?: boolean;
+        };
+        /** @description Same rules as an invoice line; stored as JSON on the schedule. */
+        RecurringLine: {
+            item?: number | null;
+            description: string;
+            /** Format: decimal */
+            quantity: string;
+            /** Format: int64 */
+            unit_price: number;
+            /**
+             * Format: int64
+             * @default 0
+             */
+            discount: number;
+        };
+        /** @description Same rules as an invoice line; stored as JSON on the schedule. */
+        RecurringLineRequest: {
+            item?: number | null;
+            description: string;
+            /** Format: decimal */
+            quantity: string;
+            /** Format: int64 */
+            unit_price: number;
+            /**
+             * Format: int64
+             * @default 0
+             */
+            discount: number;
+        };
+        RemindersPausedRequest: {
+            paused: boolean;
+        };
+        RespondRequest: {
+            accepted: boolean;
+        };
+        /**
+         * @description * `draft` - Create a draft for me to review
+         *     * `email` - Send automatically by email
+         *     * `whatsapp` - Send automatically on WhatsApp
+         * @enum {string}
+         */
+        SendModeEnum: "draft" | "email" | "whatsapp";
+        /**
+         * @description * `whatsapp_link` - whatsapp_link
+         *     * `whatsapp` - whatsapp
+         *     * `email` - email
+         * @enum {string}
+         */
+        SendRequestChannelEnum: "whatsapp_link" | "whatsapp" | "email";
+        /** @description How to send. `whatsapp_link` returns a wa.me URL; the others queue a send. */
+        SendRequestRequest: {
+            channel: components["schemas"]["SendRequestChannelEnum"];
+            /**
+             * Format: email
+             * @description Email only; defaults to the customer's
+             */
+            to?: string;
+            message?: string;
+        };
+        SendResult: {
+            /**
+             * Format: uri
+             * @description wa.me link (whatsapp_link only)
+             */
+            url?: string;
+            message?: string;
+            delivery?: components["schemas"]["Delivery"];
         };
         SignupRequest: {
             /** Format: email */
@@ -928,13 +1540,6 @@ export interface components {
             password: string;
             full_name?: string;
         };
-        /**
-         * @description * `draft` - Draft
-         *     * `sent` - Sent
-         *     * `void` - Void
-         * @enum {string}
-         */
-        StatusEnum: "draft" | "sent" | "void";
         User: {
             readonly id: number;
             /** Format: email */
@@ -953,9 +1558,17 @@ export interface components {
          *     * `payment_deleted` - Payment deleted
          *     * `voided` - Voided
          *     * `reissued` - Reissued
+         *     * `reminded` - Reminder sent
+         *     * `delivered` - Delivered
+         *     * `read` - Read
+         *     * `delivery_failed` - Delivery failed
+         *     * `accepted` - Accepted
+         *     * `declined` - Declined
+         *     * `converted` - Converted to invoice
+         *     * `generated` - Generated from schedule
          * @enum {string}
          */
-        VerbEnum: "created" | "updated" | "sent" | "shared_whatsapp" | "emailed" | "email_failed" | "viewed" | "payment_recorded" | "payment_deleted" | "voided" | "reissued";
+        VerbEnum: "created" | "updated" | "sent" | "shared_whatsapp" | "emailed" | "email_failed" | "viewed" | "payment_recorded" | "payment_deleted" | "voided" | "reissued" | "reminded" | "delivered" | "read" | "delivery_failed" | "accepted" | "declined" | "converted" | "generated";
         WhatsAppShare: {
             /** Format: uri */
             url: string;
@@ -1216,6 +1829,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Me"];
+                };
+            };
+        };
+    };
+    config_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Config"];
                 };
             };
         };
@@ -1548,6 +2180,36 @@ export interface operations {
             };
         };
     };
+    invoices_deliver_create: {
+        parameters: {
+            query?: {
+                customer?: number;
+                status?: "draft" | "overdue" | "paid" | "partial" | "sent" | "unpaid" | "void";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SendRequestRequest"];
+                "multipart/form-data": components["schemas"]["SendRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendResult"];
+                };
+            };
+        };
+    };
     invoices_email_create: {
         parameters: {
             query?: {
@@ -1653,6 +2315,66 @@ export interface operations {
         };
         responses: {
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
+                };
+            };
+        };
+    };
+    invoices_remind_create: {
+        parameters: {
+            query?: {
+                customer?: number;
+                status?: "draft" | "overdue" | "paid" | "partial" | "sent" | "unpaid" | "void";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SendRequestRequest"];
+                "multipart/form-data": components["schemas"]["SendRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendResult"];
+                };
+            };
+        };
+    };
+    invoices_reminders_create: {
+        parameters: {
+            query?: {
+                customer?: number;
+                status?: "draft" | "overdue" | "paid" | "partial" | "sent" | "unpaid" | "void";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemindersPausedRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RemindersPausedRequest"];
+                "multipart/form-data": components["schemas"]["RemindersPausedRequest"];
+            };
+        };
+        responses: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1948,6 +2670,418 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    quotes_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+                status?: "accepted" | "converted" | "declined" | "draft" | "expired" | "open" | "sent";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedQuoteListList"];
+                };
+            };
+        };
+    };
+    quotes_create: {
+        parameters: {
+            query?: {
+                status?: "accepted" | "converted" | "declined" | "draft" | "expired" | "open" | "sent";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuoteRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["QuoteRequest"];
+                "multipart/form-data": components["schemas"]["QuoteRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Quote"];
+                };
+            };
+        };
+    };
+    quotes_retrieve: {
+        parameters: {
+            query?: {
+                status?: "accepted" | "converted" | "declined" | "draft" | "expired" | "open" | "sent";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Quote"];
+                };
+            };
+        };
+    };
+    quotes_update: {
+        parameters: {
+            query?: {
+                status?: "accepted" | "converted" | "declined" | "draft" | "expired" | "open" | "sent";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuoteRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["QuoteRequest"];
+                "multipart/form-data": components["schemas"]["QuoteRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Quote"];
+                };
+            };
+        };
+    };
+    quotes_partial_update: {
+        parameters: {
+            query?: {
+                status?: "accepted" | "converted" | "declined" | "draft" | "expired" | "open" | "sent";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedQuoteRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedQuoteRequest"];
+                "multipart/form-data": components["schemas"]["PatchedQuoteRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Quote"];
+                };
+            };
+        };
+    };
+    quotes_convert_create: {
+        parameters: {
+            query?: {
+                status?: "accepted" | "converted" | "declined" | "draft" | "expired" | "open" | "sent";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ConvertRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ConvertRequest"];
+                "multipart/form-data": components["schemas"]["ConvertRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvoiceRef"];
+                };
+            };
+        };
+    };
+    quotes_deliver_create: {
+        parameters: {
+            query?: {
+                status?: "accepted" | "converted" | "declined" | "draft" | "expired" | "open" | "sent";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SendRequestRequest"];
+                "multipart/form-data": components["schemas"]["SendRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendResult"];
+                };
+            };
+        };
+    };
+    quotes_pdf_retrieve: {
+        parameters: {
+            query?: {
+                status?: "accepted" | "converted" | "declined" | "draft" | "expired" | "open" | "sent";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+        };
+    };
+    quotes_respond_create: {
+        parameters: {
+            query?: {
+                status?: "accepted" | "converted" | "declined" | "draft" | "expired" | "open" | "sent";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RespondRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RespondRequest"];
+                "multipart/form-data": components["schemas"]["RespondRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Quote"];
+                };
+            };
+        };
+    };
+    quotes_send_create: {
+        parameters: {
+            query?: {
+                status?: "accepted" | "converted" | "declined" | "draft" | "expired" | "open" | "sent";
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Quote"];
+                };
+            };
+        };
+    };
+    recurring_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedRecurringInvoiceList"];
+                };
+            };
+        };
+    };
+    recurring_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecurringInvoiceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RecurringInvoiceRequest"];
+                "multipart/form-data": components["schemas"]["RecurringInvoiceRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringInvoice"];
+                };
+            };
+        };
+    };
+    recurring_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringInvoice"];
+                };
+            };
+        };
+    };
+    recurring_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecurringInvoiceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RecurringInvoiceRequest"];
+                "multipart/form-data": components["schemas"]["RecurringInvoiceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringInvoice"];
+                };
+            };
+        };
+    };
+    recurring_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    recurring_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedRecurringInvoiceRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedRecurringInvoiceRequest"];
+                "multipart/form-data": components["schemas"]["PatchedRecurringInvoiceRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringInvoice"];
+                };
             };
         };
     };

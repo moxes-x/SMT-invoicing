@@ -8,6 +8,7 @@ from apps.audit.serializers import ActivityLogSerializer
 from apps.catalog.models import Item
 from apps.core.serializers import MoneyField
 from apps.customers.models import Customer
+from apps.messaging.serializers import DeliverySerializer
 from apps.payments.serializers import PaymentSerializer
 
 from .models import DISPLAY_STATUS_LABELS, Invoice, InvoiceLine
@@ -87,7 +88,12 @@ class InvoiceSerializer(InvoiceListSerializer):
     is_locked = serializers.BooleanField(read_only=True)
     public_url = serializers.CharField(read_only=True)
     payments = PaymentSerializer(many=True, read_only=True)
+    deliveries = DeliverySerializer(many=True, read_only=True)
     activity = ActivityLogSerializer(many=True, read_only=True)
+    reminders_paused = serializers.BooleanField(read_only=True)
+    reminder_count = serializers.SerializerMethodField()
+    from_quote = serializers.SerializerMethodField()
+    recurring_id = serializers.IntegerField(read_only=True, allow_null=True)
     reissued_from = serializers.SerializerMethodField()
     reissued_as = serializers.SerializerMethodField()
 
@@ -109,6 +115,11 @@ class InvoiceSerializer(InvoiceListSerializer):
             "reissued_from",
             "reissued_as",
             "payments",
+            "deliveries",
+            "reminders_paused",
+            "reminder_count",
+            "from_quote",
+            "recurring_id",
             "activity",
             "created_at",
         ]
@@ -130,6 +141,18 @@ class InvoiceSerializer(InvoiceListSerializer):
 
     def _ref(self, inv: Invoice | None) -> dict[str, Any] | None:
         return {"id": inv.pk, "number": inv.number} if inv else None
+
+    def get_reminder_count(self, obj: Invoice) -> int:
+        return sum(
+            1
+            for d in obj.deliveries.all()  # type: ignore[attr-defined]
+            if d.kind == "reminder" and d.status != "failed"
+        )
+
+    @extend_schema_field(InvoiceRefSerializer(allow_null=True))
+    def get_from_quote(self, obj: Invoice) -> dict[str, Any] | None:
+        q = getattr(obj, "quote", None)
+        return {"id": q.pk, "number": q.number} if q else None
 
     @extend_schema_field(InvoiceRefSerializer(allow_null=True))
     def get_reissued_from(self, obj: Invoice) -> dict[str, Any] | None:
@@ -176,13 +199,6 @@ class WhatsAppShareSerializer(serializers.Serializer[Any]):
     message = serializers.CharField()
 
 
-class DeliverySerializer(serializers.Serializer[Any]):
-    id = serializers.IntegerField()
-    channel = serializers.CharField()
-    recipient = serializers.CharField()
-    status = serializers.CharField()
-
-
 class MoneyByCurrencySerializer(serializers.Serializer[Any]):
     currency = serializers.CharField()
     amount = serializers.IntegerField()
@@ -204,3 +220,7 @@ class DashboardSerializer(serializers.Serializer[Any]):
     drafts = serializers.IntegerField()
     top_debtors = DebtorSerializer(many=True)
     recent = InvoiceListSerializer(many=True)
+
+
+class RemindersPausedSerializer(serializers.Serializer[Any]):
+    paused = serializers.BooleanField()

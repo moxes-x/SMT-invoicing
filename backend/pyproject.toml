@@ -16,6 +16,7 @@ dependencies = [
     "weasyprint>=70.0",
     "django-anymail[resend]>=15.2",
     "django-storages>=1.14.6",
+    "httpx>=0.28.1",
 ]
 
 [dependency-groups]

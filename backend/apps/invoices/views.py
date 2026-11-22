@@ -6,14 +6,21 @@ from django.http import HttpResponse
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import filters, mixins, status, viewsets
+from rest_framework import filters, mixins, serializers, status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.core.tenancy import BusinessScopedMixin, HasBusiness, require_business
-from apps.messaging.services import queue_email, share_via_whatsapp
+from apps.messaging import whatsapp
+from apps.messaging.models import Delivery
+from apps.messaging.serializers import (
+    DeliverySerializer,
+    SendRequestSerializer,
+    SendResultSerializer,
+)
+from apps.messaging.services import dispatch, queue_email, share_via_whatsapp
 from apps.payments.models import Payment
 from apps.payments.serializers import PaymentSerializer
 
@@ -22,11 +29,11 @@ from .models import Invoice
 from .pdf import get_or_build_pdf, pdf_filename
 from .serializers import (
     DashboardSerializer,
-    DeliverySerializer,
     EmailRequestSerializer,
     InvoiceListSerializer,
     InvoiceSerializer,
     ReasonSerializer,
+    RemindersPausedSerializer,
     WhatsAppShareSerializer,
 )
 
@@ -79,8 +86,8 @@ class InvoiceViewSet(
     def get_queryset(self) -> QuerySet[Invoice]:
         qs = super().get_queryset().with_balance().select_related("customer", "business")  # type: ignore[attr-defined]
         if self.action != "list":
-            qs = qs.select_related("reissued_from", "reissued_as").prefetch_related(
-                "lines", "payments", "activity__actor"
+            qs = qs.select_related("reissued_from", "reissued_as", "quote").prefetch_related(
+                "lines", "payments", "deliveries", "activity__actor"
             )
         params = self.request.query_params
         if value := params.get("status"):
@@ -150,6 +157,35 @@ class InvoiceViewSet(
         delivery = queue_email(invoice, request.user, to, ser.validated_data.get("message", ""))
         return Response(DeliverySerializer(delivery).data, status=status.HTTP_202_ACCEPTED)
 
+    @extend_schema(request=SendRequestSerializer, responses=SendResultSerializer)
+    @action(detail=True, methods=["post"])
+    def deliver(self, request: Request, pk: str | None = None) -> Response:
+        """Send the invoice: wa.me link, WhatsApp Cloud API, or email. Marks it sent."""
+        return self._dispatch(request, Delivery.Kind.INVOICE)
+
+    @extend_schema(request=SendRequestSerializer, responses=SendResultSerializer)
+    @action(detail=True, methods=["post"])
+    def remind(self, request: Request, pk: str | None = None) -> Response:
+        """Send a payment reminder now (one tap)."""
+        return self._dispatch(request, Delivery.Kind.REMINDER)
+
+    def _dispatch(self, request: Request, kind: str) -> Response:
+        ser = SendRequestSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        result = dispatch(self.get_object(), request.user, kind, ser.validated_data)
+        code = status.HTTP_200_OK if "url" in result else status.HTTP_202_ACCEPTED
+        return Response(result, status=code)
+
+    @extend_schema(request=RemindersPausedSerializer, responses=InvoiceSerializer)
+    @action(detail=True, methods=["post"], url_path="reminders")
+    def pause_reminders(self, request: Request, pk: str | None = None) -> Response:
+        """Turn automatic reminders off (or back on) for this invoice. Allowed after sending."""
+        ser = RemindersPausedSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        invoice = self.get_object()
+        Invoice.objects.filter(pk=invoice.pk).update(reminders_paused=ser.validated_data["paused"])
+        return self._fresh(invoice)
+
     @extend_schema(responses={(200, "application/pdf"): OpenApiTypes.BINARY})
     @action(detail=True, methods=["get"])
     def pdf(self, request: Request, pk: str | None = None) -> HttpResponse:
@@ -212,3 +248,15 @@ def dashboard(request: Request) -> Response:
         ).data,
     }
     return Response(data)
+
+
+class ConfigSerializer(serializers.Serializer[Any]):
+    whatsapp_api = serializers.BooleanField(help_text="Automatic WhatsApp sending is set up")
+
+
+@extend_schema(responses=ConfigSerializer)
+@api_view(["GET"])
+@permission_classes([HasBusiness])
+def app_config(request: Request) -> Response:
+    """What this server can do, so the app shows only working options."""
+    return Response({"whatsapp_api": whatsapp.is_enabled()})

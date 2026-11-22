@@ -3,11 +3,11 @@
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 12px">
 <table role="presentation" width="100%" style="max-width:520px;background:#fff;border-radius:12px;padding:28px">
 <tr><td>
-  <p style="margin:0 0 16px;font-size:16px;line-height:1.5">{{ message }}</p>
-  <p style="margin:0;color:#5f6b76;font-size:13px;text-transform:uppercase;letter-spacing:.5px">Invoice {{ invoice.number }}</p>
-  <p style="margin:4px 0 4px;font-size:28px;font-weight:700">{{ invoice.total|money:invoice.currency }}</p>
-  <p style="margin:0 0 24px;color:#5f6b76">Due {{ invoice.due_date|date:"j M Y" }}</p>
-  <a href="{{ invoice.public_url }}" style="display:block;text-align:center;background:#0f766e;color:#fff;text-decoration:none;padding:14px;border-radius:8px;font-weight:600">View invoice</a>
+  <p style="margin:0 0 16px;font-size:16px;line-height:1.5;white-space:pre-line">{{ message }}</p>
+  <p style="margin:0;color:#5f6b76;font-size:13px;text-transform:uppercase;letter-spacing:.5px">{{ headline }}</p>
+  <p style="margin:4px 0 4px;font-size:28px;font-weight:700">{{ amount|money:doc.currency }}</p>
+  <p style="margin:0 0 24px;color:#5f6b76">{{ date_label }} {{ date|date:"j M Y" }}</p>
+  <a href="{{ doc.public_url }}" style="display:block;text-align:center;background:#0f766e;color:#fff;text-decoration:none;padding:14px;border-radius:8px;font-weight:600">{{ button_label }}</a>
   <p style="margin:24px 0 0;color:#5f6b76;font-size:13px">The PDF is attached. Sent by {{ business.name }}{% if business.phone %} · {{ business.phone }}{% endif %}.</p>
 </td></tr></table>
 </td></tr></table>

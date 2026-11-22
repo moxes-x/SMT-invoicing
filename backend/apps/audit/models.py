@@ -21,10 +21,21 @@ class ActivityLog(models.Model):
         PAYMENT_DELETED = "payment_deleted", "Payment deleted"
         VOIDED = "voided", "Voided"
         REISSUED = "reissued", "Reissued"
+        REMINDED = "reminded", "Reminder sent"
+        DELIVERED = "delivered", "Delivered"
+        READ = "read", "Read"
+        DELIVERY_FAILED = "delivery_failed", "Delivery failed"
+        ACCEPTED = "accepted", "Accepted"
+        DECLINED = "declined", "Declined"
+        CONVERTED = "converted", "Converted to invoice"
+        GENERATED = "generated", "Generated from schedule"
 
     business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name="activity")
     invoice = models.ForeignKey(
         "invoices.Invoice", null=True, blank=True, on_delete=models.CASCADE, related_name="activity"
+    )
+    quote = models.ForeignKey(
+        "quotes.Quote", null=True, blank=True, on_delete=models.CASCADE, related_name="activity"
     )
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL
@@ -48,11 +59,18 @@ def log(
     message: str,
     *,
     invoice: Any = None,
+    quote: Any = None,
     actor: Any = None,
     **data: Any,
 ) -> ActivityLog:
     if actor is not None and not getattr(actor, "is_authenticated", False):
         actor = None
     return ActivityLog.objects.create(
-        business=business, invoice=invoice, actor=actor, verb=verb, message=message, data=data
+        business=business,
+        invoice=invoice,
+        quote=quote,
+        actor=actor,
+        verb=verb,
+        message=message,
+        data=data,
     )

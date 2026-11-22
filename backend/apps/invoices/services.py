@@ -16,7 +16,7 @@ from apps.audit.models import ActivityLog, log
 from apps.core.money import format_money, invoice_totals
 from apps.core.queue import enqueue_on_commit
 
-from .models import Invoice, InvoiceLine, InvoiceSequence
+from .models import Invoice, InvoiceSequence
 
 
 class InvoiceLocked(ValidationError):
@@ -32,32 +32,50 @@ class LineData(TypedDict, total=False):
     discount: int
 
 
-def next_invoice_number(business: Business, year: int) -> str:
-    """Allocate INV-<year>-<nnnn>. Must run inside the caller's transaction.
+def next_number(business: Business, year: int, prefix: str = "INV") -> str:
+    """Allocate <prefix>-<year>-<nnnn>. Must run inside the caller's transaction.
 
     The row is created if missing (ON CONFLICT DO NOTHING, so racing creators don't error) and then
     locked with SELECT ... FOR UPDATE, so concurrent callers queue and never share a number.
     """
     InvoiceSequence.objects.bulk_create(
-        [InvoiceSequence(business=business, year=year)], ignore_conflicts=True
+        [InvoiceSequence(business=business, prefix=prefix, year=year)], ignore_conflicts=True
     )
-    seq = InvoiceSequence.objects.select_for_update().get(business=business, year=year)
+    seq = InvoiceSequence.objects.select_for_update().get(
+        business=business, prefix=prefix, year=year
+    )
     seq.last_number += 1
     seq.save(update_fields=["last_number"])
-    return f"INV-{year}-{seq.last_number:04d}"
+    return f"{prefix}-{year}-{seq.last_number:04d}"
 
 
-def _write_lines(invoice: Invoice, lines: Sequence[LineData]) -> None:
-    invoice.lines.all().delete()  # type: ignore[attr-defined]
-    InvoiceLine.objects.bulk_create(
-        InvoiceLine(invoice=invoice, position=i, **line) for i, line in enumerate(lines)
+def write_lines(doc: Any, lines: Sequence[LineData]) -> None:
+    """Replace an invoice's or quote's lines and recompute its totals (doc must be saved)."""
+    manager = doc.lines
+    model, fk = manager.model, manager.field.name
+    manager.all().delete()
+    model.objects.bulk_create(
+        model(**{fk: doc}, position=i, **line) for i, line in enumerate(lines)
     )
     totals = invoice_totals(
         (Decimal(line["quantity"]), int(line["unit_price"]), int(line.get("discount", 0)))
         for line in lines
     )
     for field, value in totals.items():
-        setattr(invoice, field, value)
+        setattr(doc, field, value)
+
+
+def copy_lines(doc: Any) -> list[LineData]:
+    return [
+        {
+            "item": line.item,
+            "description": line.description,
+            "quantity": line.quantity,
+            "unit_price": line.unit_price,
+            "discount": line.discount,
+        }
+        for line in doc.lines.all()
+    ]
 
 
 @transaction.atomic
@@ -70,11 +88,11 @@ def create_invoice(
     invoice = Invoice(
         business=business,
         created_by=user if getattr(user, "is_authenticated", False) else None,
-        number=next_invoice_number(business, issue_date.year),
+        number=next_number(business, issue_date.year),
         **fields,
     )
     invoice.save()
-    _write_lines(invoice, lines)
+    write_lines(invoice, lines)
     invoice.save(update_fields=["subtotal", "discount_total", "total", "updated_at"])
     log(business, ActivityLog.Verb.CREATED, "Created as draft", invoice=invoice, actor=user)
     return invoice
@@ -94,7 +112,7 @@ def update_draft(
     for field, value in fields.items():
         setattr(invoice, field, value)
     if lines is not None:
-        _write_lines(invoice, lines)
+        write_lines(invoice, lines)
     invoice.save()
     return invoice
 
@@ -153,16 +171,7 @@ def reissue_invoice(invoice: Invoice, user: Any, reason: str = "") -> Invoice:
         raise ValidationError({"detail": "This invoice was already reissued."})
     if original.status != Invoice.Status.VOID:
         original = void_invoice(original, user, reason or "Reissued")
-    lines: list[LineData] = [
-        {
-            "item": line.item,
-            "description": line.description,
-            "quantity": line.quantity,
-            "unit_price": line.unit_price,
-            "discount": line.discount,
-        }
-        for line in original.lines.all()  # type: ignore[attr-defined]
-    ]
+    lines = copy_lines(original)
     today = timezone.localdate()
     term = original.due_date - original.issue_date
     copy = create_invoice(

@@ -19,6 +19,7 @@ test("sign up, create a business, see the dashboard, log out", async ({ page }) 
   await expect(page.getByRole("banner")).toContainText("Mwila Hair Studio");
   await expect(page.getByRole("heading", { name: "Hello, Mwila" })).toBeVisible();
 
+  await page.getByRole("link", { name: "More" }).click();
   await page.getByRole("button", { name: "Log out" }).click();
   await expect(page).toHaveURL(/\/login$/);
 });

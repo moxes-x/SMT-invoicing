@@ -25,6 +25,8 @@ DISPLAY_STATUS_LABELS = {
     "void": "Void",
 }
 
+DISPLAY_STATUS_CHOICES = list(DISPLAY_STATUS_LABELS.items())
+
 
 class InvoiceQuerySet(models.QuerySet["Invoice"]):
     def with_balance(self) -> InvoiceQuerySet:
@@ -81,6 +83,16 @@ class Invoice(models.Model):
     viewed_at = models.DateTimeField(null=True, blank=True)
     voided_at = models.DateTimeField(null=True, blank=True)
     void_reason = models.CharField(max_length=300, blank=True)
+    recurring = models.ForeignKey(
+        "recurring.RecurringInvoice",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="invoices",
+    )
+    reminders_paused = models.BooleanField(
+        default=False, help_text="Skip automatic reminders for this invoice."
+    )
     reissued_from = models.OneToOneField(
         "self", null=True, blank=True, on_delete=models.SET_NULL, related_name="reissued_as"
     )
@@ -92,12 +104,20 @@ class Invoice(models.Model):
 
     objects = InvoiceQuerySet.as_manager()
 
+    DOCUMENT_TEMPLATE = "invoices/document.html"
+
     class Meta:
         ordering = ["-issue_date", "-id"]
         constraints = [
             models.UniqueConstraint(fields=["business", "number"], name="unique_invoice_number"),
             models.CheckConstraint(
                 condition=models.Q(due_date__gte=F("issue_date")), name="due_after_issue"
+            ),
+            # A schedule produces at most one invoice per run date, even if the job runs twice.
+            models.UniqueConstraint(
+                fields=["recurring", "issue_date"],
+                condition=models.Q(recurring__isnull=False),
+                name="one_invoice_per_recurring_run",
             ),
         ]
         indexes = [models.Index(fields=["business", "status", "due_date"])]
@@ -153,6 +173,9 @@ class Invoice(models.Model):
     def is_locked(self) -> bool:
         return self.status != self.Status.DRAFT
 
+    def pdf_state(self) -> str:
+        return f"{self.amount_paid}|{self.display_status}"
+
     @property
     def public_path(self) -> str:
         return f"/i/{self.public_token}/"
@@ -189,16 +212,22 @@ class InvoiceLine(models.Model):
 
 
 class InvoiceSequence(models.Model):
-    """Per-business, per-year counter. Locked with SELECT ... FOR UPDATE when allocating."""
+    """Per-business, per-prefix, per-year counter (INV, QUO…).
+
+    Locked with SELECT ... FOR UPDATE when allocating.
+    """
 
     business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name="+")
+    prefix = models.CharField(max_length=8, default="INV")
     year = models.PositiveIntegerField()
     last_number = models.PositiveIntegerField(default=0)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["business", "year"], name="unique_sequence_year")
+            models.UniqueConstraint(
+                fields=["business", "prefix", "year"], name="unique_sequence_prefix_year"
+            )
         ]
 
     def __str__(self) -> str:
-        return f"{self.business_id}/{self.year}: {self.last_number}"
+        return f"{self.business_id}/{self.prefix}/{self.year}: {self.last_number}"

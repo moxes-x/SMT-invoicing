@@ -61,3 +61,46 @@ def time_machine():
     yield mover
     if mover.traveller is not None:
         mover.traveller.stop()
+
+
+class FakeMeta:
+    """Stands in for graph.facebook.com. Records requests; fail_with makes the next send fail."""
+
+    def __init__(self):
+        self.requests = []
+        self.fail_with = None  # (status_code, error_code)
+        self.counter = 0
+
+    def handler(self, request):
+        import httpx
+
+        self.requests.append(request)
+        if request.url.path.endswith("/media"):
+            return httpx.Response(200, json={"id": "media-1"})
+        if self.fail_with:
+            status, code = self.fail_with
+            return httpx.Response(status, json={"error": {"message": "boom", "code": code}})
+        self.counter += 1
+        return httpx.Response(200, json={"messages": [{"id": f"wamid.{self.counter}"}]})
+
+    def sent_payloads(self):
+        import json
+
+        return [json.loads(r.content) for r in self.requests if r.url.path.endswith("/messages")]
+
+
+@pytest.fixture
+def whatsapp_api(settings, monkeypatch):
+    import httpx
+
+    settings.WHATSAPP_TOKEN = "test-token"
+    settings.WHATSAPP_PHONE_NUMBER_ID = "123456"
+    settings.WHATSAPP_APP_SECRET = "app-secret"
+    settings.WHATSAPP_VERIFY_TOKEN = "verify-me"
+    fake = FakeMeta()
+    real_client = httpx.Client
+    monkeypatch.setattr(
+        "apps.messaging.whatsapp.httpx.Client",
+        lambda **kw: real_client(transport=httpx.MockTransport(fake.handler)),
+    )
+    return fake

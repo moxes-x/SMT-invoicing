@@ -1,0 +1,12 @@
+{% load money %}{{ message }}
+
+{{ headline }}
+{{ amount_label }}: {{ amount|money:doc.currency }}
+{{ date_label }}: {{ date|date:"j M Y" }}
+
+{{ button_label }}: {{ doc.public_url }}
+
+The PDF is attached.
+
+{{ business.name }}{% if business.phone %}
+{{ business.phone }}{% endif %}

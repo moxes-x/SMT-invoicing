@@ -331,7 +331,7 @@ def test_invoice_quantity_decimal_roundtrip():
 def test_send_survives_broker_outage(
     client_a, owner_a, settings, monkeypatch, django_capture_on_commit_callbacks
 ):
-    from apps.messaging.tasks import send_invoice_email
+    from apps.messaging.tasks import send_delivery as send_invoice_email
 
     settings.CELERY_TASK_ALWAYS_EAGER = False
 

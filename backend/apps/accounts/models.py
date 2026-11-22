@@ -4,7 +4,7 @@ from typing import Any, ClassVar
 
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
-from django.core.validators import RegexValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 from django.utils import timezone
 
@@ -77,6 +77,14 @@ class Business(models.Model):
     )
     default_currency = models.CharField(
         max_length=3, choices=Currency.choices, default=Currency.ZMW
+    )
+    # Automatic overdue reminders (sent by the daily Celery beat job).
+    auto_reminders = models.BooleanField(default=False)
+    reminder_interval_days = models.PositiveSmallIntegerField(
+        default=7, validators=[MinValueValidator(1), MaxValueValidator(60)]
+    )
+    max_reminders = models.PositiveSmallIntegerField(
+        default=3, validators=[MinValueValidator(1), MaxValueValidator(10)]
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -181,23 +181,6 @@ export function useInvoiceAction(id: number) {
   });
 }
 
-export function useShareWhatsApp(id: number) {
-  const invalidate = useInvalidateMoney();
-  return useMutation({
-    mutationFn: () => api<S["WhatsAppShare"]>(`/invoices/${id}/whatsapp/`, { method: "POST" }),
-    onSuccess: () => invalidate(),
-  });
-}
-
-export function useEmailInvoice(id: number) {
-  const invalidate = useInvalidateMoney();
-  return useMutation({
-    mutationFn: (body: { to?: string; message?: string }) =>
-      api<S["Delivery"]>(`/invoices/${id}/email/`, { method: "POST", json: body }),
-    onSuccess: () => invalidate(),
-  });
-}
-
 export function useRecordPayment(id: number) {
   const invalidate = useInvalidateMoney();
   return useMutation({
@@ -226,5 +209,154 @@ export function useUpdateBusiness(id: number) {
     mutationFn: (body: BusinessRequest) =>
       api<S["Business"]>(`/businesses/${id}/`, { method: "PATCH", json: body }),
     onSuccess: () => qc.invalidateQueries({ queryKey: meKey }),
+  });
+}
+
+// ---- Phase 2: sending, reminders, quotes, recurring ------------------------------------------
+export type Quote = S["Quote"];
+export type QuoteListItem = S["QuoteList"];
+export type QuoteRequest = S["QuoteRequest"];
+export type QuoteDisplayStatus = Quote["display_status"];
+export type Recurring = S["RecurringInvoice"];
+export type RecurringRequest = S["RecurringInvoiceRequest"];
+export type Delivery = S["Delivery"];
+export type SendChannel = S["SendRequestRequest"]["channel"];
+export type SendResult = S["SendResult"];
+
+export function useAppConfig() {
+  return useQuery({
+    queryKey: ["config"],
+    queryFn: () => api<S["Config"]>("/config/"),
+    staleTime: 5 * 60_000,
+  });
+}
+
+export interface SendBody {
+  channel: SendChannel;
+  to?: string;
+  message?: string;
+}
+
+/** Send an invoice (deliver) or chase it (remind). */
+export function useSendInvoice(id: number, kind: "deliver" | "remind") {
+  const invalidate = useInvalidateMoney();
+  return useMutation({
+    mutationFn: (body: SendBody) =>
+      api<SendResult>(`/invoices/${id}/${kind}/`, { method: "POST", json: body }),
+    onSuccess: () => invalidate(),
+  });
+}
+
+export function usePauseReminders(id: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (paused: boolean) =>
+      api<Invoice>(`/invoices/${id}/reminders/`, { method: "POST", json: { paused } }),
+    onSuccess: (inv) => qc.setQueryData(invoiceKeys.detail(inv.id), inv),
+  });
+}
+
+export const quoteKeys = {
+  all: ["quotes"] as const,
+  list: (f: { status?: string; search?: string }) => ["quotes", "list", f] as const,
+  detail: (id: number) => ["quotes", id] as const,
+};
+
+export function useQuotes(filters: { status?: string; search?: string } = {}) {
+  return useQuery({
+    queryKey: quoteKeys.list(filters),
+    queryFn: () => api<Page<QuoteListItem>>(`/quotes/${qs({ ...filters })}`),
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useQuote(id: number | undefined) {
+  return useQuery({
+    queryKey: quoteKeys.detail(id ?? 0),
+    queryFn: () => api<Quote>(`/quotes/${id}/`),
+    enabled: !!id,
+  });
+}
+
+export function useSaveQuote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: QuoteRequest & { id?: number }) =>
+      id
+        ? api<Quote>(`/quotes/${id}/`, { method: "PATCH", json: body })
+        : api<Quote>("/quotes/", { method: "POST", json: body }),
+    onSuccess: (q) => {
+      qc.setQueryData(quoteKeys.detail(q.id), q);
+      return qc.invalidateQueries({ queryKey: quoteKeys.all });
+    },
+  });
+}
+
+export function useQuoteAction(id: number) {
+  const qc = useQueryClient();
+  const refresh = () =>
+    Promise.all([
+      qc.invalidateQueries({ queryKey: quoteKeys.all }),
+      qc.invalidateQueries({ queryKey: invoiceKeys.all }),
+      qc.invalidateQueries({ queryKey: ["dashboard"] }),
+    ]);
+  return {
+    send: useMutation({
+      mutationFn: (body: SendBody) =>
+        api<SendResult>(`/quotes/${id}/deliver/`, { method: "POST", json: body }),
+      onSuccess: refresh,
+    }),
+    respond: useMutation({
+      mutationFn: (accepted: boolean) =>
+        api<Quote>(`/quotes/${id}/respond/`, { method: "POST", json: { accepted } }),
+      onSuccess: refresh,
+    }),
+    convert: useMutation({
+      mutationFn: (days_until_due: number) =>
+        api<{ id: number; number: string }>(`/quotes/${id}/convert/`, {
+          method: "POST",
+          json: { days_until_due },
+        }),
+      onSuccess: refresh,
+    }),
+  };
+}
+
+export const recurringKeys = {
+  all: ["recurring"] as const,
+  detail: (id: number) => ["recurring", id] as const,
+};
+
+export function useRecurringList() {
+  return useQuery({
+    queryKey: recurringKeys.all,
+    queryFn: () => api<Page<Recurring>>("/recurring/"),
+  });
+}
+
+export function useRecurring(id: number | undefined) {
+  return useQuery({
+    queryKey: recurringKeys.detail(id ?? 0),
+    queryFn: () => api<Recurring>(`/recurring/${id}/`),
+    enabled: !!id,
+  });
+}
+
+export function useSaveRecurring() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: Partial<RecurringRequest> & { id?: number }) =>
+      id
+        ? api<Recurring>(`/recurring/${id}/`, { method: "PATCH", json: body })
+        : api<Recurring>("/recurring/", { method: "POST", json: body }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: recurringKeys.all }),
+  });
+}
+
+export function useDeleteRecurring() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/recurring/${id}/`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: recurringKeys.all }),
   });
 }

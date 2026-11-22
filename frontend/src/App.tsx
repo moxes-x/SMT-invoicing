@@ -9,7 +9,13 @@ import { InvoiceEditorPage } from "@/pages/invoice-editor";
 import { InvoicesPage } from "@/pages/invoices";
 import { ItemsPage } from "@/pages/items";
 import { LoginPage } from "@/pages/login";
+import { MorePage } from "@/pages/more";
 import { OnboardingPage } from "@/pages/onboarding";
+import { QuoteDetailPage } from "@/pages/quote-detail";
+import { QuoteEditorPage } from "@/pages/quote-editor";
+import { QuotesPage } from "@/pages/quotes";
+import { RecurringPage } from "@/pages/recurring";
+import { RecurringEditorPage } from "@/pages/recurring-editor";
 import { SettingsPage } from "@/pages/settings";
 import { SignupPage } from "@/pages/signup";
 import { Providers } from "@/providers";
@@ -61,9 +67,17 @@ const routes = [
           { path: "/invoices/new", element: <InvoiceEditorPage /> },
           { path: "/invoices/:id", element: <InvoiceDetailPage /> },
           { path: "/invoices/:id/edit", element: <InvoiceEditorPage /> },
+          { path: "/quotes", element: <QuotesPage /> },
+          { path: "/quotes/new", element: <QuoteEditorPage /> },
+          { path: "/quotes/:id", element: <QuoteDetailPage /> },
+          { path: "/quotes/:id/edit", element: <QuoteEditorPage /> },
+          { path: "/recurring", element: <RecurringPage /> },
+          { path: "/recurring/new", element: <RecurringEditorPage /> },
+          { path: "/recurring/:id/edit", element: <RecurringEditorPage /> },
           { path: "/customers", element: <CustomersPage /> },
           { path: "/items", element: <ItemsPage /> },
           { path: "/settings", element: <SettingsPage /> },
+          { path: "/more", element: <MorePage /> },
         ],
       },
     ],

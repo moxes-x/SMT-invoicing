@@ -29,7 +29,7 @@ test("sign up → customer → invoice → WhatsApp → customer opens link → 
 
   // Customer
   await page.goto("/customers");
-  await page.getByRole("button", { name: "Add" }).click();
+  await page.getByRole("button", { name: "Add", exact: true }).click();
   await page.getByLabel("Name", { exact: true }).fill("Chileshe Mulenga");
   await page.getByLabel("WhatsApp number").fill("0977 123 456");
   await page.getByRole("button", { name: "Add customer" }).click();

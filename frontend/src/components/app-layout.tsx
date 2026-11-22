@@ -1,22 +1,17 @@
-import { FileText, LayoutDashboard, LogOut, Package, Settings, Users } from "lucide-react";
-import { NavLink, Outlet, useNavigate } from "react-router";
+import { LogOut, Menu } from "lucide-react";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
 import { useLogout, useMe } from "@/api/auth";
+import { MAIN_NAV, MORE_NAV, NAV } from "@/components/nav";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-const NAV = [
-  { to: "/", label: "Home", icon: LayoutDashboard, end: true },
-  { to: "/invoices", label: "Invoices", icon: FileText },
-  { to: "/customers", label: "Customers", icon: Users },
-  { to: "/items", label: "Items", icon: Package },
-  { to: "/settings", label: "Settings", icon: Settings },
-];
 
 export function AppLayout() {
   const { data: me } = useMe();
   const logout = useLogout();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const inMore = pathname === "/more" || MORE_NAV.some((n) => pathname.startsWith(n.to));
   const signOut = async () => {
     await logout.mutateAsync();
     navigate("/login");
@@ -49,12 +44,9 @@ export function AppLayout() {
         </Button>
       </aside>
 
-      {/* Mobile top bar */}
-      <header className="bg-background/90 sticky top-0 z-10 flex h-14 items-center justify-between gap-2 border-b px-4 backdrop-blur md:hidden">
+      {/* Mobile top bar (log out lives under More) */}
+      <header className="bg-background/90 sticky top-0 z-10 flex h-14 items-center gap-2 border-b px-4 backdrop-blur md:hidden">
         <span className="truncate font-semibold">{me?.current_business?.name}</span>
-        <Button variant="ghost" size="sm" onClick={signOut}>
-          <LogOut /> Log out
-        </Button>
       </header>
 
       <main className="mx-auto max-w-4xl p-4 md:p-8">
@@ -63,7 +55,7 @@ export function AppLayout() {
 
       {/* Mobile bottom nav: thumb-reachable */}
       <nav className="bg-background fixed inset-x-0 bottom-0 z-10 grid grid-cols-5 border-t pb-[env(safe-area-inset-bottom)] md:hidden">
-        {NAV.map(({ to, label, icon: Icon, end }) => (
+        {MAIN_NAV.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
@@ -79,6 +71,16 @@ export function AppLayout() {
             {label}
           </NavLink>
         ))}
+        <NavLink
+          to="/more"
+          className={cn(
+            "text-muted-foreground flex flex-col items-center gap-1 py-2 text-[11px] font-medium",
+            inMore && "text-primary",
+          )}
+        >
+          <Menu className="size-5" />
+          More
+        </NavLink>
       </nav>
     </div>
   );

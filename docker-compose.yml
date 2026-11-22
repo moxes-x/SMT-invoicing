@@ -34,6 +34,11 @@ services:
       CSRF_TRUSTED_ORIGINS: http://localhost:${FRONTEND_PORT:-5173},http://127.0.0.1:${FRONTEND_PORT:-5173}
       PUBLIC_BASE_URL: http://localhost:${FRONTEND_PORT:-5173}
       MEDIA_ROOT: /app/media
+      # Optional: automatic WhatsApp sending (see README). Left empty, the app uses wa.me links.
+      WHATSAPP_TOKEN: ${WHATSAPP_TOKEN:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_APP_SECRET: ${WHATSAPP_APP_SECRET:-}
+      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:-}
     volumes: ["./backend:/app"]
     ports: ["${BACKEND_PORT:-8000}:8000"]
     depends_on:
@@ -43,6 +48,14 @@ services:
   worker:
     build: ./backend
     command: celery -A config worker -l info
+    environment: *backend-env
+    volumes: ["./backend:/app"]
+    depends_on: [backend, redis]
+
+  # Runs the daily jobs: recurring invoices at 06:00 and overdue reminders at 09:00 (Lusaka).
+  beat:
+    build: ./backend
+    command: celery -A config beat -l info --schedule /tmp/celerybeat-schedule
     environment: *backend-env
     volumes: ["./backend:/app"]
     depends_on: [backend, redis]

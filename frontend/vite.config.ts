@@ -17,6 +17,7 @@ export default defineConfig({
     proxy: {
       "/api": { target: backend, changeOrigin: false },
       "/i/": { target: backend, changeOrigin: false },
+      "/q/": { target: backend, changeOrigin: false },
     },
   },
   test: {

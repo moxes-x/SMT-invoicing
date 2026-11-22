@@ -1,0 +1,90 @@
+{% load money %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Quote {{ quote.number }} · {{ business.name }}</title>
+  {% include "documents/_styles.html" %}
+  <style>
+    .respond { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 22px; }
+    .respond button { font: inherit; font-weight: 600; padding: 14px; border-radius: 8px; border: 1px solid var(--line); background:#fff; cursor:pointer; }
+    .respond .yes { background: var(--brand); color:#fff; border-color: var(--brand); }
+    .badge.accepted, .badge.converted { background:#dcfce7; color:#166534; } .badge.declined, .badge.expired { background:#fee2e2; color:var(--bad); }
+    .note { padding: 12px 14px; border-radius: 8px; margin-top: 18px; background:#f3f4f6; font-weight:600; }
+    .note.good { background:#dcfce7; color:#166534; }
+  </style>
+</head>
+<body>
+<div class="page">
+  {% if preview_draft %}<div class="banner draft">Draft preview. Your customer can't open this link until you send the quote.</div>{% endif %}
+  <div class="top">
+    <div>
+      <h1>Quote</h1>
+      <div class="muted">{{ quote.number }}</div>
+    </div>
+    <div><span class="badge {{ quote.display_status }}">{{ quote.display_status_label }}</span></div>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="label">From</div>
+      <div class="biz">{{ business.name }}</div>
+      {% if business.address %}<div class="muted" style="white-space:pre-line">{{ business.address }}</div>{% endif %}
+      {% if business.phone %}<div class="muted">{{ business.phone }}</div>{% endif %}
+      {% if business.email %}<div class="muted">{{ business.email }}</div>{% endif %}
+      {% if business.tpin %}<div class="muted">TPIN {{ business.tpin }}</div>{% endif %}
+    </div>
+    <div>
+      <div class="label">For</div>
+      <div class="biz">{{ customer.name }}</div>
+      {% if customer.phone %}<div class="muted">{{ customer.phone }}</div>{% endif %}
+      {% if customer.email %}<div class="muted">{{ customer.email }}</div>{% endif %}
+    </div>
+    <div><div class="label">Date</div><div>{{ quote.issue_date|date:"j M Y" }}</div></div>
+    <div><div class="label">Valid until</div><div>{{ quote.valid_until|date:"j M Y" }}</div></div>
+  </div>
+
+  <table>
+    <thead><tr><th>Item</th><th class="num">Qty</th><th class="num hide-sm">Price</th><th class="num">Amount</th></tr></thead>
+    <tbody>
+      {% for line in lines %}
+      <tr>
+        <td>{{ line.description }}{% if line.discount %}<div class="muted" style="font-size:13px">Discount −{{ line.discount|money:quote.currency }}</div>{% endif %}</td>
+        <td class="num">{{ line.quantity|qty }}</td>
+        <td class="num hide-sm">{{ line.unit_price|money:quote.currency }}</td>
+        <td class="num">{{ line.amount|money:quote.currency }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <div><span class="muted">Subtotal</span><span>{{ quote.subtotal|money:quote.currency }}</span></div>
+    {% if quote.discount_total %}<div><span class="muted">Discount</span><span>−{{ quote.discount_total|money:quote.currency }}</span></div>{% endif %}
+    <div class="grand"><span>Total</span><span>{{ quote.total|money:quote.currency }}</span></div>
+  </div>
+
+  {% if quote.notes %}<div class="box"><div class="label">Notes</div>{{ quote.notes }}</div>{% endif %}
+
+  {% if not pdf %}
+    {% if error == "closed" %}<div class="note">This quote can no longer be accepted or declined.</div>{% endif %}
+    {% if quote.status == "accepted" or quote.status == "converted" %}
+      <div class="note good">Accepted. {{ business.name }} will be in touch.</div>
+    {% elif quote.status == "declined" %}
+      <div class="note">You declined this quote.</div>
+    {% elif quote.display_status == "expired" %}
+      <div class="note">This quote expired on {{ quote.valid_until|date:"j M Y" }}. Contact {{ business.name }} for a new one.</div>
+    {% elif quote.can_respond and not is_member %}
+      <form method="post" action="respond/" class="respond">
+        {% csrf_token %}
+        <button type="submit" name="decision" value="decline">Decline</button>
+        <button type="submit" name="decision" value="accept" class="yes">Accept quote</button>
+      </form>
+    {% endif %}
+    <div class="actions"><a class="btn" style="background:#fff;color:var(--ink);border:1px solid var(--line)" href="pdf/">Download PDF</a></div>
+  {% endif %}
+  <footer class="muted">This is a quote, not an invoice or a tax invoice.</footer>
+</div>
+</body>
+</html>

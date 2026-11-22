@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import environ
+from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -36,6 +37,8 @@ INSTALLED_APPS = [
     "apps.payments",
     "apps.messaging",
     "apps.audit",
+    "apps.recurring",
+    "apps.quotes",
 ]
 
 MIDDLEWARE = [
@@ -154,10 +157,41 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "COMPONENT_SPLIT_REQUEST": True,
-    "ENUM_NAME_OVERRIDES": {"CurrencyEnum": "apps.accounts.models.Currency"},
+    "ENUM_NAME_OVERRIDES": {
+        "CurrencyEnum": "apps.accounts.models.Currency",
+        "InvoiceStatusEnum": "apps.invoices.models.Invoice.Status",
+        "InvoiceDisplayStatusEnum": "apps.invoices.models.DISPLAY_STATUS_CHOICES",
+        "QuoteStatusEnum": "apps.quotes.models.Quote.Status",
+        "QuoteDisplayStatusEnum": "apps.quotes.models.QUOTE_DISPLAY_STATUS_CHOICES",
+        "DeliveryStatusEnum": "apps.messaging.models.Delivery.Status",
+    },
 }
 
 CELERY_BROKER_URL = env("REDIS_URL", default="redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
+CELERY_BEAT_SCHEDULE = {
+    # Times are Africa/Lusaka (CELERY_TIMEZONE).
+    "generate-recurring-invoices": {
+        "task": "apps.recurring.tasks.generate_recurring_invoices",
+        "schedule": crontab(hour=6, minute=0),
+    },
+    "send-overdue-reminders": {
+        "task": "apps.messaging.tasks.send_overdue_reminders",
+        "schedule": crontab(hour=9, minute=0),
+    },
+}
+
+# --- WhatsApp Business Cloud API (Phase 2). Leave the token empty to keep click-to-chat only.
+WHATSAPP_TOKEN = env("WHATSAPP_TOKEN", default="")
+WHATSAPP_PHONE_NUMBER_ID = env("WHATSAPP_PHONE_NUMBER_ID", default="")
+WHATSAPP_APP_SECRET = env("WHATSAPP_APP_SECRET", default="")  # verifies webhook signatures
+WHATSAPP_VERIFY_TOKEN = env("WHATSAPP_VERIFY_TOKEN", default="")  # webhook subscription check
+WHATSAPP_API_VERSION = env("WHATSAPP_API_VERSION", default="v21.0")
+WHATSAPP_TEMPLATE_LANGUAGE = env("WHATSAPP_TEMPLATE_LANGUAGE", default="en")
+WHATSAPP_TEMPLATES = {
+    "invoice": env("WHATSAPP_TEMPLATE_INVOICE", default="invoice_new"),
+    "reminder": env("WHATSAPP_TEMPLATE_REMINDER", default="invoice_reminder"),
+    "quote": env("WHATSAPP_TEMPLATE_QUOTE", default="quote_new"),
+}

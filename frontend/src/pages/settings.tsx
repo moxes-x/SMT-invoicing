@@ -1,10 +1,10 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import { useMe } from "@/api/auth";
-import { useUpdateBusiness } from "@/api/resources";
+import { useAppConfig, useUpdateBusiness } from "@/api/resources";
 import { FormField } from "@/components/form-field";
 import { ErrorNote, PageHeader } from "@/components/page";
 import { Button } from "@/components/ui/button";
@@ -23,9 +23,25 @@ const schema = z.object({
   payment_details: z.string().max(1000),
   default_currency: z.enum(["ZMW", "USD"]),
   vat_registered: z.boolean(),
+  auto_reminders: z.boolean(),
+  reminder_interval_days: z.coerce
+    .number<string>()
+    .int()
+    .min(1, "At least 1 day.")
+    .max(60, "At most 60 days."),
+  max_reminders: z.coerce.number<string>().int().min(1, "At least 1.").max(10, "At most 10."),
 });
 type Values = z.infer<typeof schema>;
-const FIELDS = ["name", "phone", "email", "address", "tpin", "payment_details"] as const;
+const FIELDS = [
+  "name",
+  "phone",
+  "email",
+  "address",
+  "tpin",
+  "payment_details",
+  "reminder_interval_days",
+  "max_reminders",
+] as const;
 
 export function SettingsPage() {
   const { data: me } = useMe();
@@ -41,7 +57,7 @@ function BusinessForm() {
   const [status, setStatus] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const canEdit = business.role === "owner" || business.role === "admin";
-  const form = useForm<Values>({
+  const form = useForm<z.input<typeof schema>, unknown, Values>({
     resolver: zodResolver(schema),
     defaultValues: {
       name: business.name,
@@ -52,16 +68,26 @@ function BusinessForm() {
       payment_details: business.payment_details ?? "",
       default_currency: business.default_currency === "USD" ? "USD" : "ZMW",
       vat_registered: business.vat_registered ?? false,
+      auto_reminders: business.auto_reminders ?? false,
+      reminder_interval_days: String(business.reminder_interval_days ?? 7),
+      max_reminders: String(business.max_reminders ?? 3),
     },
   });
   const { errors, isSubmitting, isDirty } = form.formState;
+  const whatsappApi = !!useAppConfig().data?.whatsapp_api;
+  const autoReminders = useWatch({ control: form.control, name: "auto_reminders" });
 
   const onSubmit = form.handleSubmit(async (values) => {
     setStatus(null);
     setFormError(null);
     try {
       const saved = await update.mutateAsync(values);
-      form.reset({ ...values, phone: saved.phone ?? "" });
+      form.reset({
+        ...values,
+        phone: saved.phone ?? "",
+        reminder_interval_days: String(values.reminder_interval_days),
+        max_reminders: String(values.max_reminders),
+      });
       setStatus("Saved.");
     } catch (err) {
       setFormError(applyApiErrors(err, form.setError, FIELDS));
@@ -70,7 +96,10 @@ function BusinessForm() {
 
   return (
     <form onSubmit={onSubmit} className="grid gap-4" noValidate>
-      <PageHeader title="Business settings" description="Shown on every invoice you send." />
+      <PageHeader
+        title="Business settings"
+        description="Shown on every invoice and quote you send."
+      />
       <Card>
         <CardContent>
           <fieldset disabled={!canEdit} className="grid gap-4">
@@ -115,6 +144,60 @@ function BusinessForm() {
               />
               We are VAT-registered
             </label>
+          </fieldset>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent>
+          <fieldset disabled={!canEdit} className="grid gap-4">
+            <legend className="mb-1 font-semibold">Payment reminders</legend>
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="accent-primary mt-0.5 size-4"
+                {...form.register("auto_reminders")}
+              />
+              <span>
+                Remind customers automatically when an invoice is overdue
+                <span className="text-muted-foreground block text-xs">
+                  {whatsappApi
+                    ? "Sent at 9 AM by WhatsApp, or email if there's no number. You can pause it on any invoice."
+                    : "Sent at 9 AM by email to customers who have an email address. You can pause it on any invoice."}
+                </span>
+              </span>
+            </label>
+            {autoReminders && (
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  id="b-every"
+                  label="Days between reminders"
+                  error={errors.reminder_interval_days?.message}
+                >
+                  <Input
+                    id="b-every"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={60}
+                    {...form.register("reminder_interval_days")}
+                  />
+                </FormField>
+                <FormField
+                  id="b-max"
+                  label="Most reminders per invoice"
+                  error={errors.max_reminders?.message}
+                >
+                  <Input
+                    id="b-max"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={10}
+                    {...form.register("max_reminders")}
+                  />
+                </FormField>
+              </div>
+            )}
           </fieldset>
         </CardContent>
       </Card>
