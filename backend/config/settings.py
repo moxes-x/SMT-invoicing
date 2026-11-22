@@ -171,6 +171,16 @@ CELERY_BROKER_URL = env("REDIS_URL", default="redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_ALWAYS_EAGER = env.bool("CELERY_TASK_ALWAYS_EAGER", default=False)
+# Online payments (Lenco by BroadPay). Each business connects its own Lenco account in Settings;
+# keys are stored encrypted with FIELD_ENCRYPTION_KEY (a Fernet key; generate one with
+# `python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`).
+FIELD_ENCRYPTION_KEY = env("FIELD_ENCRYPTION_KEY", default="")
+LENCO_LIVE_API_URL = env("LENCO_LIVE_API_URL", default="https://api.lenco.co/access/v2")
+# Lenco's docs don't publish the sandbox API host; confirm it with Lenco and override if needed.
+LENCO_SANDBOX_API_URL = env("LENCO_SANDBOX_API_URL", default="https://sandbox.lenco.co/access/v2")
+LENCO_LIVE_WIDGET_URL = "https://pay.lenco.co/js/v1/inline.js"
+LENCO_SANDBOX_WIDGET_URL = "https://pay.sandbox.lenco.co/js/v1/inline.js"
+
 CELERY_BEAT_SCHEDULE = {
     # Times are Africa/Lusaka (CELERY_TIMEZONE).
     "generate-recurring-invoices": {
@@ -180,6 +190,11 @@ CELERY_BEAT_SCHEDULE = {
     "send-overdue-reminders": {
         "task": "apps.messaging.tasks.send_overdue_reminders",
         "schedule": crontab(hour=9, minute=0),
+    },
+    # Webhooks can be missed; re-check online payments still waiting for an answer.
+    "reconcile-online-payments": {
+        "task": "apps.payments.tasks.reconcile_payments",
+        "schedule": crontab(minute="*/10"),
     },
 }
 

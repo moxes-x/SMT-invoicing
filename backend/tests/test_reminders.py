@@ -123,4 +123,5 @@ def test_beat_schedule_is_configured(settings):
     assert tasks == {
         "apps.recurring.tasks.generate_recurring_invoices",
         "apps.messaging.tasks.send_overdue_reminders",
+        "apps.payments.tasks.reconcile_payments",
     }

@@ -476,6 +476,96 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/customers/{id}/statement/:
+    get:
+      operationId: customers_statement_retrieve
+      description: Opening balance, invoices and payments in the period, running and
+        closing balance.
+      parameters:
+      - in: query
+        name: currency
+        schema:
+          type: string
+          enum:
+          - USD
+          - ZMW
+        description: 'Default: business currency'
+      - in: query
+        name: end
+        schema:
+          type: string
+          format: date
+        description: 'Default: today'
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: query
+        name: start
+        schema:
+          type: string
+          format: date
+        description: 'Default: 90 days ago'
+      tags:
+      - customers
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Statement'
+          description: ''
+  /api/customers/{id}/statement/pdf/:
+    get:
+      operationId: customers_statement_pdf_retrieve
+      description: |-
+        Filters every queryset by request.business and stamps it on create.
+
+        Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+        which avoids leaking whether an id exists.
+      parameters:
+      - in: query
+        name: currency
+        schema:
+          type: string
+          enum:
+          - USD
+          - ZMW
+        description: 'Default: business currency'
+      - in: query
+        name: end
+        schema:
+          type: string
+          format: date
+        description: 'Default: today'
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      - in: query
+        name: start
+        schema:
+          type: string
+          format: date
+        description: 'Default: 90 days ago'
+      tags:
+      - customers
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+          description: ''
   /api/dashboard/:
     get:
       operationId: dashboard_retrieve
@@ -1214,6 +1304,38 @@ paths:
               schema:
                 $ref: '#/components/schemas/WhatsAppShare'
           description: ''
+  /api/invoices/export/:
+    get:
+      operationId: invoices_export_retrieve
+      description: The invoice list as CSV (same filters as the list; amounts in Kwacha).
+      parameters:
+      - in: query
+        name: customer
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - draft
+          - overdue
+          - paid
+          - partial
+          - sent
+          - unpaid
+          - void
+      tags:
+      - invoices
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            text/csv:
+              schema:
+                type: string
+          description: ''
   /api/items/:
     get:
       operationId: items_list
@@ -1402,6 +1524,64 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/online-payments/:
+    get:
+      operationId: online_payments_retrieve
+      description: The current business's Lenco account. The secret key is write-only
+        and stored encrypted.
+      tags:
+      - online-payments
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LencoAccount'
+          description: ''
+    put:
+      operationId: online_payments_update
+      description: The current business's Lenco account. The secret key is write-only
+        and stored encrypted.
+      tags:
+      - online-payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LencoAccountRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LencoAccountRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LencoAccountRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LencoAccount'
+          description: ''
+  /api/online-payments/test/:
+    post:
+      operationId: online_payments_test_create
+      description: Check the saved keys against Lenco by looking up a reference that
+        can't exist.
+      tags:
+      - online-payments
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConnectionTest'
+          description: ''
   /api/payments/:
     get:
       operationId: payments_list
@@ -1472,6 +1652,35 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/payments/export/:
+    get:
+      operationId: payments_export_retrieve
+      description: All payments as CSV (amounts in Kwacha, e.g. 1250.00), for accounting
+        or ZRA records.
+      parameters:
+      - in: query
+        name: end
+        schema:
+          type: string
+          format: date
+        description: Up to this date (inclusive)
+      - in: query
+        name: start
+        schema:
+          type: string
+          format: date
+        description: From this date (inclusive)
+      tags:
+      - payments
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            text/csv:
+              schema:
+                type: string
+          description: ''
   /api/quotes/:
     get:
       operationId: quotes_list
@@ -2238,8 +2447,22 @@ components:
         whatsapp_api:
           type: boolean
           description: Automatic WhatsApp sending is set up
+        online_payments:
+          type: boolean
+          description: This business takes Pay now payments through Lenco
       required:
+      - online_payments
       - whatsapp_api
+    ConnectionTest:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+      required:
+      - message
+      - ok
     ConvertRequest:
       type: object
       properties:
@@ -2412,7 +2635,7 @@ components:
           readOnly: true
         kind:
           allOf:
-          - $ref: '#/components/schemas/KindEnum'
+          - $ref: '#/components/schemas/DeliveryKindEnum'
           readOnly: true
         channel:
           allOf:
@@ -2458,6 +2681,16 @@ components:
       description: |-
         * `whatsapp` - WhatsApp
         * `email` - Email
+    DeliveryKindEnum:
+      enum:
+      - invoice
+      - reminder
+      - quote
+      type: string
+      description: |-
+        * `invoice` - Invoice
+        * `reminder` - Reminder
+        * `quote` - Quote
     DeliveryStatusEnum:
       enum:
       - queued
@@ -2484,6 +2717,14 @@ components:
         message:
           type: string
           maxLength: 1000
+    EnvironmentEnum:
+      enum:
+      - sandbox
+      - live
+      type: string
+      description: |-
+        * `sandbox` - Sandbox (test)
+        * `live` - Live
     FrequencyEnum:
       enum:
       - weekly
@@ -2896,16 +3137,44 @@ components:
       required:
       - name
       - unit_price
-    KindEnum:
-      enum:
-      - invoice
-      - reminder
-      - quote
-      type: string
-      description: |-
-        * `invoice` - Invoice
-        * `reminder` - Reminder
-        * `quote` - Quote
+    LencoAccount:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        environment:
+          $ref: '#/components/schemas/EnvironmentEnum'
+        public_key:
+          type: string
+          maxLength: 200
+        has_secret_key:
+          type: boolean
+          readOnly: true
+        secret_key_hint:
+          type: string
+          readOnly: true
+        webhook_url:
+          type: string
+          readOnly: true
+      required:
+      - has_secret_key
+      - secret_key_hint
+      - webhook_url
+    LencoAccountRequest:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        environment:
+          $ref: '#/components/schemas/EnvironmentEnum'
+        public_key:
+          type: string
+          maxLength: 200
+        secret_key:
+          type: string
+          writeOnly: true
+          description: Leave out (or blank) to keep the saved key.
+          maxLength: 200
     LoginRequest:
       type: object
       properties:
@@ -2942,6 +3211,8 @@ components:
       - cash
       - mtn_momo
       - airtel_money
+      - zamtel_kwacha
+      - card
       - bank
       - other
       type: string
@@ -2949,6 +3220,8 @@ components:
         * `cash` - Cash
         * `mtn_momo` - MTN MoMo
         * `airtel_money` - Airtel Money
+        * `zamtel_kwacha` - Zamtel Kwacha
+        * `card` - Card
         * `bank` - Bank transfer
         * `other` - Other
     MoneyByCurrency:
@@ -3303,12 +3576,22 @@ components:
         method_label:
           type: string
           readOnly: true
+        source:
+          allOf:
+          - $ref: '#/components/schemas/SourceEnum'
+          readOnly: true
         reference:
           type: string
           maxLength: 100
         note:
           type: string
           maxLength: 300
+        receipt_number:
+          type: string
+          readOnly: true
+        receipt_url:
+          type: string
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -3318,6 +3601,9 @@ components:
       - created_at
       - id
       - method_label
+      - receipt_number
+      - receipt_url
+      - source
     PaymentRequest:
       type: object
       properties:
@@ -3890,6 +4176,84 @@ components:
       required:
       - email
       - password
+    SourceEnum:
+      enum:
+      - manual
+      - online
+      type: string
+      description: |-
+        * `manual` - Recorded by you
+        * `online` - Paid online
+    Statement:
+      type: object
+      properties:
+        currency:
+          type: string
+        start:
+          type: string
+          format: date
+        end:
+          type: string
+          format: date
+        opening:
+          type: integer
+        invoiced:
+          type: integer
+        paid:
+          type: integer
+        closing:
+          type: integer
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatementRow'
+      required:
+      - closing
+      - currency
+      - end
+      - invoiced
+      - opening
+      - paid
+      - rows
+      - start
+    StatementRow:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        kind:
+          $ref: '#/components/schemas/StatementRowKindEnum'
+        reference:
+          type: string
+        description:
+          type: string
+        debit:
+          type: integer
+        credit:
+          type: integer
+        balance:
+          type: integer
+        invoice_id:
+          type: integer
+          nullable: true
+      required:
+      - balance
+      - credit
+      - date
+      - debit
+      - description
+      - invoice_id
+      - kind
+      - reference
+    StatementRowKindEnum:
+      enum:
+      - invoice
+      - payment
+      type: string
+      description: |-
+        * `invoice` - invoice
+        * `payment` - payment
     User:
       type: object
       properties:
@@ -3927,6 +4291,8 @@ components:
       - declined
       - converted
       - generated
+      - paid_online
+      - online_payment_failed
       type: string
       description: |-
         * `created` - Created
@@ -3948,6 +4314,8 @@ components:
         * `declined` - Declined
         * `converted` - Converted to invoice
         * `generated` - Generated from schedule
+        * `paid_online` - Paid online
+        * `online_payment_failed` - Online payment failed
     WhatsAppShare:
       type: object
       properties:

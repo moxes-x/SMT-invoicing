@@ -1,0 +1,49 @@
+{% load money %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  {% if attempt.is_open and attempt.channel == "mobile_money" or attempt.is_open and checking %}<meta http-equiv="refresh" content="5">{% endif %}
+  <title>Paying {{ invoice.number }} · {{ business.name }}</title>
+  {% include "documents/_styles.html" %}
+</head>
+<body>
+<div class="page">
+  <h1 style="font-size:22px">Pay {{ business.name }}</h1>
+  <div class="muted">Invoice {{ invoice.number }} · {{ attempt.amount|money:attempt.currency }}</div>
+
+  {% if attempt.status == "successful" %}
+    <div class="note good">Payment received. Thank you!</div>
+    {% if attempt.payment %}<div class="actions"><a class="btn" href="/r/{{ attempt.payment.public_token }}/">View your receipt</a></div>{% endif %}
+    <div class="actions"><a class="btn secondary" href="{{ invoice.public_path }}">Back to the invoice</a></div>
+  {% elif attempt.status == "failed" %}
+    <div class="note bad">The payment didn't go through{% if attempt.failure_reason %}: {{ attempt.failure_reason }}{% endif %}. No money was taken.</div>
+    <div class="actions"><a class="btn" href="{{ invoice.public_path }}#pay">Try again</a></div>
+  {% elif attempt.channel == "mobile_money" %}
+    <div class="note">
+      <strong>Check your phone.</strong> Approve the payment of {{ attempt.amount|money:attempt.currency }} on {{ attempt.phone }} by entering your PIN.
+      This page updates by itself.
+    </div>
+    <p class="muted" style="font-size:13px">No prompt? Dial your network's menu (*115# MTN, *778# Airtel) to approve pending payments, or <a href="{{ invoice.public_path }}#pay">try again</a>.</p>
+  {% else %}
+    {% if checking %}<div class="note">Confirming your card payment… <a href="?check=1">Refresh</a></div>{% endif %}
+    <div class="actions"><button class="btn" id="card" type="button">Pay {{ attempt.amount|money:attempt.currency }} by card</button></div>
+    <p class="muted" style="font-size:13px">Card details are entered on Lenco's secure page, never on this site.</p>
+    <div class="actions"><a class="btn secondary" href="{{ invoice.public_path }}">Back to the invoice</a></div>
+    <script src="{{ account.widget_url }}"></script>
+    {{ widget|json_script:"lenco-options" }}
+    <script>
+      document.getElementById("card").addEventListener("click", function () {
+        var options = JSON.parse(document.getElementById("lenco-options").textContent);
+        options.onSuccess = function () { location.href = "?check=1"; };
+        options.onConfirmationPending = function () { location.href = "?check=1"; };
+        options.onClose = function () {};
+        LencoPay.getPaid(options);
+      });
+    </script>
+  {% endif %}
+  <footer class="muted">Payments are processed by Lenco (BroadPay), licensed by the Bank of Zambia.</footer>
+</div>
+</body>
+</html>

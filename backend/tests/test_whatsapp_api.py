@@ -17,7 +17,7 @@ def deliver(client, inv, **data):
 @pytest.mark.django_db
 class TestCloudApiSending:
     def test_config_reports_whatsapp_off_by_default(self, client_a):
-        assert client_a.get("/api/config/").json() == {"whatsapp_api": False}
+        assert client_a.get("/api/config/").json()["whatsapp_api"] is False
 
     def test_refuses_when_not_configured(self, client_a, owner_a):
         inv = make_invoice(owner_a.business)
@@ -29,7 +29,7 @@ class TestCloudApiSending:
     def test_sends_template_with_pdf(
         self, client_a, owner_a, whatsapp_api, django_capture_on_commit_callbacks
     ):
-        assert client_a.get("/api/config/").json() == {"whatsapp_api": True}
+        assert client_a.get("/api/config/").json()["whatsapp_api"] is True
         customer = CustomerFactory(business=owner_a.business, name="Mutale Phiri")
         inv = make_invoice(owner_a.business, customer=customer)
         with django_capture_on_commit_callbacks(execute=True):

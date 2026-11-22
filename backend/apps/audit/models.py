@@ -29,6 +29,8 @@ class ActivityLog(models.Model):
         DECLINED = "declined", "Declined"
         CONVERTED = "converted", "Converted to invoice"
         GENERATED = "generated", "Generated from schedule"
+        PAID_ONLINE = "paid_online", "Paid online"
+        ONLINE_PAYMENT_FAILED = "online_payment_failed", "Online payment failed"
 
     business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name="activity")
     invoice = models.ForeignKey(

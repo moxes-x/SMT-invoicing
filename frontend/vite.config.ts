@@ -18,6 +18,7 @@ export default defineConfig({
       "/api": { target: backend, changeOrigin: false },
       "/i/": { target: backend, changeOrigin: false },
       "/q/": { target: backend, changeOrigin: false },
+      "/r/": { target: backend, changeOrigin: false },
     },
   },
   test: {

@@ -1,0 +1,8 @@
+{% load money %}Hello {{ invoice.customer.name }},
+
+Thank you. {{ business.name }} received your payment of {{ amount }} for invoice {{ invoice.number }}.
+
+Receipt {{ payment.receipt_number }}: {{ payment.receipt_url }}
+{% if invoice.balance > 0 %}Balance still due: {{ invoice.balance|money:invoice.currency }}{% else %}The invoice is fully paid.{% endif %}
+
+{{ business.name }}

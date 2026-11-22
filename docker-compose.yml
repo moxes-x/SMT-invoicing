@@ -39,6 +39,9 @@ services:
       WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
       WHATSAPP_APP_SECRET: ${WHATSAPP_APP_SECRET:-}
       WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN:-}
+      # Online payments: each business pastes its own Lenco keys in Settings. These are optional.
+      FIELD_ENCRYPTION_KEY: ${FIELD_ENCRYPTION_KEY:-}
+      LENCO_SANDBOX_API_URL: ${LENCO_SANDBOX_API_URL:-https://sandbox.lenco.co/access/v2}
     volumes: ["./backend:/app"]
     ports: ["${BACKEND_PORT:-8000}:8000"]
     depends_on:

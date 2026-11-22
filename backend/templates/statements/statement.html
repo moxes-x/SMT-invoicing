@@ -1,0 +1,60 @@
+{% load money %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Statement · {{ customer.name }} · {{ business.name }}</title>
+  {% include "documents/_styles.html" %}
+</head>
+<body>
+<div class="page">
+  <div class="top">
+    <div>
+      <h1>Statement</h1>
+      <div class="muted">{{ statement.start|date:"j M Y" }} to {{ statement.end|date:"j M Y" }}</div>
+    </div>
+  </div>
+  <div class="grid">
+    <div>
+      <div class="label">From</div>
+      <div class="biz">{{ business.name }}</div>
+      {% if business.address %}<div class="muted" style="white-space:pre-line">{{ business.address }}</div>{% endif %}
+      {% if business.phone %}<div class="muted">{{ business.phone }}</div>{% endif %}
+      {% if business.tpin %}<div class="muted">TPIN {{ business.tpin }}</div>{% endif %}
+    </div>
+    <div>
+      <div class="label">Customer</div>
+      <div class="biz">{{ customer.name }}</div>
+      {% if customer.phone %}<div class="muted">{{ customer.phone }}</div>{% endif %}
+      {% if customer.email %}<div class="muted">{{ customer.email }}</div>{% endif %}
+    </div>
+  </div>
+  <table>
+    <thead><tr><th>Date</th><th>Details</th><th class="num">Invoiced</th><th class="num">Paid</th><th class="num">Balance</th></tr></thead>
+    <tbody>
+      <tr><td>{{ statement.start|date:"j M Y" }}</td><td>Opening balance</td><td></td><td></td><td class="num">{{ statement.opening|money:statement.currency }}</td></tr>
+      {% for r in statement.rows %}
+      <tr>
+        <td style="white-space:nowrap">{{ r.date|date:"j M Y" }}</td>
+        <td>{{ r.description }}{% if r.kind == "payment" and r.reference %}<div class="muted" style="font-size:12px">{{ r.reference }}</div>{% endif %}</td>
+        <td class="num">{% if r.debit %}{{ r.debit|money:statement.currency }}{% endif %}</td>
+        <td class="num">{% if r.credit %}{{ r.credit|money:statement.currency }}{% endif %}</td>
+        <td class="num">{{ r.balance|money:statement.currency }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div class="totals">
+    <div><span class="muted">Invoiced</span><span>{{ statement.invoiced|money:statement.currency }}</span></div>
+    <div><span class="muted">Paid</span><span>{{ statement.paid|money:statement.currency }}</span></div>
+    <div class="due"><span>Balance owed</span><span>{{ statement.closing|money:statement.currency }}</span></div>
+  </div>
+  {% if outstanding %}
+  <div class="box" style="white-space:normal"><div class="label">Unpaid invoices</div>
+    {% for i in outstanding %}<div style="display:flex;justify-content:space-between"><span>{{ i.number }} · due {{ i.due_date|date:"j M Y" }}</span><span>{{ i.balance|money:statement.currency }}</span></div>{% endfor %}
+  </div>
+  {% endif %}
+  {% if business.payment_details and statement.closing > 0 %}<div class="box"><div class="label">How to pay</div>{{ business.payment_details }}</div>{% endif %}
+  <footer class="muted">Generated {% now "j M Y" %}. This is a statement of account, not a tax invoice.</footer>
+</div>
+</body>
+</html>

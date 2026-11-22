@@ -203,36 +203,58 @@ def reissue_invoice(invoice: Invoice, user: Any, reason: str = "") -> Invoice:
 
 
 @transaction.atomic
-def record_payment(invoice: Invoice, user: Any, **data: Any) -> Any:
+def record_payment(invoice: Invoice, user: Any, *, online: bool = False, **data: Any) -> Any:
+    """Record money received. Every payment gets a receipt number (RCT-<year>-<nnnn>).
+
+    Online payments skip the balance check: the money has already arrived (e.g. the customer paid
+    twice), so it must be recorded; the timeline flags the overpayment for a refund.
+    """
     from apps.payments.models import Payment
 
     invoice = _lock(invoice)
-    if invoice.status != Invoice.Status.SENT:
+    if invoice.status != Invoice.Status.SENT and not online:
         raise ValidationError({"detail": "Payments can only be recorded on sent invoices."})
     amount = int(data["amount"])
-    balance = format_money(invoice.balance, invoice.currency)
-    if amount > invoice.balance:
+    owed_before = invoice.balance
+    balance = format_money(owed_before, invoice.currency)
+    if amount > owed_before and not online:
         raise ValidationError({"amount": [f"That is more than the balance of {balance}."]})
+    paid_on = data.setdefault("paid_on", timezone.localdate())
     payment = Payment.objects.create(
         business=invoice.business,
         invoice=invoice,
         recorded_by=user if getattr(user, "is_authenticated", False) else None,
+        source=Payment.Source.ONLINE if online else Payment.Source.MANUAL,
+        receipt_number=next_number(invoice.business, paid_on.year, prefix="RCT"),
         **data,
     )
     label = Payment.Method(payment.method).label
+    money = format_money(amount, invoice.currency)
     log(
         invoice.business,
-        ActivityLog.Verb.PAYMENT_RECORDED,
-        f"Payment {format_money(amount, invoice.currency)} recorded ({label})",
+        ActivityLog.Verb.PAID_ONLINE if online else ActivityLog.Verb.PAYMENT_RECORDED,
+        f"Paid {money} online ({label})" if online else f"Payment {money} recorded ({label})",
         invoice=invoice,
         actor=user,
         payment_id=payment.pk,
     )
+    if amount > owed_before:
+        over = format_money(amount - owed_before, invoice.currency)
+        log(
+            invoice.business,
+            ActivityLog.Verb.PAYMENT_RECORDED,
+            f"Overpaid by {over}. Refund the customer or keep it as credit.",
+            invoice=invoice,
+        )
     return payment
 
 
 @transaction.atomic
 def delete_payment(payment: Any, user: Any) -> None:
+    if payment.source == "online":
+        raise ValidationError(
+            {"detail": "Online payments came through Lenco and can't be deleted. Refund in Lenco."}
+        )
     invoice = _lock(payment.invoice)
     amount = format_money(payment.amount, invoice.currency)
     payment.delete()

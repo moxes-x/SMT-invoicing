@@ -225,6 +225,45 @@ export interface paths {
         patch: operations["customers_partial_update"];
         trace?: never;
     };
+    "/api/customers/{id}/statement/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Opening balance, invoices and payments in the period, running and closing balance. */
+        get: operations["customers_statement_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/customers/{id}/statement/pdf/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Filters every queryset by request.business and stamps it on create.
+         *
+         *     Objects of other businesses are simply invisible, so detail routes return 404 (not 403),
+         *     which avoids leaking whether an id exists.
+         */
+        get: operations["customers_statement_pdf_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dashboard/": {
         parameters: {
             query?: never;
@@ -464,6 +503,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/invoices/export/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The invoice list as CSV (same filters as the list; amounts in Kwacha). */
+        get: operations["invoices_export_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/items/": {
         parameters: {
             query?: never;
@@ -532,6 +588,41 @@ export interface paths {
         patch: operations["items_partial_update"];
         trace?: never;
     };
+    "/api/online-payments/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The current business's Lenco account. The secret key is write-only and stored encrypted. */
+        get: operations["online_payments_retrieve"];
+        /** @description The current business's Lenco account. The secret key is write-only and stored encrypted. */
+        put: operations["online_payments_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/online-payments/test/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Check the saved keys against Lenco by looking up a reference that can't exist. */
+        post: operations["online_payments_test_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/payments/": {
         parameters: {
             query?: never;
@@ -562,6 +653,23 @@ export interface paths {
         post?: never;
         /** @description Payments are recorded via POST /invoices/{id}/payments/; listed and undone here. */
         delete: operations["payments_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/payments/export/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description All payments as CSV (amounts in Kwacha, e.g. 1250.00), for accounting or ZRA records. */
+        get: operations["payments_export_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -826,6 +934,12 @@ export interface components {
         Config: {
             /** @description Automatic WhatsApp sending is set up */
             whatsapp_api: boolean;
+            /** @description This business takes Pay now payments through Lenco */
+            online_payments: boolean;
+        };
+        ConnectionTest: {
+            ok: boolean;
+            message: string;
         };
         ConvertRequest: {
             /** @default 14 */
@@ -884,7 +998,7 @@ export interface components {
         };
         Delivery: {
             readonly id: number;
-            readonly kind: components["schemas"]["KindEnum"];
+            readonly kind: components["schemas"]["DeliveryKindEnum"];
             readonly channel: components["schemas"]["DeliveryChannelEnum"];
             readonly recipient: string;
             readonly status: components["schemas"]["DeliveryStatusEnum"];
@@ -903,6 +1017,13 @@ export interface components {
          */
         DeliveryChannelEnum: "whatsapp" | "email";
         /**
+         * @description * `invoice` - Invoice
+         *     * `reminder` - Reminder
+         *     * `quote` - Quote
+         * @enum {string}
+         */
+        DeliveryKindEnum: "invoice" | "reminder" | "quote";
+        /**
          * @description * `queued` - Queued
          *     * `shared` - Shared
          *     * `sent` - Sent
@@ -917,6 +1038,12 @@ export interface components {
             to?: string;
             message?: string;
         };
+        /**
+         * @description * `sandbox` - Sandbox (test)
+         *     * `live` - Live
+         * @enum {string}
+         */
+        EnvironmentEnum: "sandbox" | "live";
         /**
          * @description * `weekly` - Weekly
          *     * `monthly` - Monthly
@@ -1075,13 +1202,21 @@ export interface components {
             unit_price: number;
             is_active?: boolean;
         };
-        /**
-         * @description * `invoice` - Invoice
-         *     * `reminder` - Reminder
-         *     * `quote` - Quote
-         * @enum {string}
-         */
-        KindEnum: "invoice" | "reminder" | "quote";
+        LencoAccount: {
+            enabled?: boolean;
+            environment?: components["schemas"]["EnvironmentEnum"];
+            public_key?: string;
+            readonly has_secret_key: boolean;
+            readonly secret_key_hint: string;
+            readonly webhook_url: string;
+        };
+        LencoAccountRequest: {
+            enabled?: boolean;
+            environment?: components["schemas"]["EnvironmentEnum"];
+            public_key?: string;
+            /** @description Leave out (or blank) to keep the saved key. */
+            secret_key?: string;
+        };
         LoginRequest: {
             /** Format: email */
             email: string;
@@ -1096,11 +1231,13 @@ export interface components {
          * @description * `cash` - Cash
          *     * `mtn_momo` - MTN MoMo
          *     * `airtel_money` - Airtel Money
+         *     * `zamtel_kwacha` - Zamtel Kwacha
+         *     * `card` - Card
          *     * `bank` - Bank transfer
          *     * `other` - Other
          * @enum {string}
          */
-        MethodEnum: "cash" | "mtn_momo" | "airtel_money" | "bank" | "other";
+        MethodEnum: "cash" | "mtn_momo" | "airtel_money" | "zamtel_kwacha" | "card" | "bank" | "other";
         MoneyByCurrency: {
             currency: string;
             amount: number;
@@ -1289,8 +1426,11 @@ export interface components {
             paid_on?: string;
             method?: components["schemas"]["MethodEnum"];
             readonly method_label: string;
+            readonly source: components["schemas"]["SourceEnum"];
             reference?: string;
             note?: string;
+            readonly receipt_number: string;
+            readonly receipt_url: string;
             /** Format: date-time */
             readonly created_at: string;
         };
@@ -1540,6 +1680,41 @@ export interface components {
             password: string;
             full_name?: string;
         };
+        /**
+         * @description * `manual` - Recorded by you
+         *     * `online` - Paid online
+         * @enum {string}
+         */
+        SourceEnum: "manual" | "online";
+        Statement: {
+            currency: string;
+            /** Format: date */
+            start: string;
+            /** Format: date */
+            end: string;
+            opening: number;
+            invoiced: number;
+            paid: number;
+            closing: number;
+            rows: components["schemas"]["StatementRow"][];
+        };
+        StatementRow: {
+            /** Format: date */
+            date: string;
+            kind: components["schemas"]["StatementRowKindEnum"];
+            reference: string;
+            description: string;
+            debit: number;
+            credit: number;
+            balance: number;
+            invoice_id: number | null;
+        };
+        /**
+         * @description * `invoice` - invoice
+         *     * `payment` - payment
+         * @enum {string}
+         */
+        StatementRowKindEnum: "invoice" | "payment";
         User: {
             readonly id: number;
             /** Format: email */
@@ -1566,9 +1741,11 @@ export interface components {
          *     * `declined` - Declined
          *     * `converted` - Converted to invoice
          *     * `generated` - Generated from schedule
+         *     * `paid_online` - Paid online
+         *     * `online_payment_failed` - Online payment failed
          * @enum {string}
          */
-        VerbEnum: "created" | "updated" | "sent" | "shared_whatsapp" | "emailed" | "email_failed" | "viewed" | "payment_recorded" | "payment_deleted" | "voided" | "reissued" | "reminded" | "delivered" | "read" | "delivery_failed" | "accepted" | "declined" | "converted" | "generated";
+        VerbEnum: "created" | "updated" | "sent" | "shared_whatsapp" | "emailed" | "email_failed" | "viewed" | "payment_recorded" | "payment_deleted" | "voided" | "reissued" | "reminded" | "delivered" | "read" | "delivery_failed" | "accepted" | "declined" | "converted" | "generated" | "paid_online" | "online_payment_failed";
         WhatsAppShare: {
             /** Format: uri */
             url: string;
@@ -1996,6 +2173,62 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Customer"];
+                };
+            };
+        };
+    };
+    customers_statement_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Default: business currency */
+                currency?: "USD" | "ZMW";
+                /** @description Default: today */
+                end?: string;
+                /** @description Default: 90 days ago */
+                start?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Statement"];
+                };
+            };
+        };
+    };
+    customers_statement_pdf_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Default: business currency */
+                currency?: "USD" | "ZMW";
+                /** @description Default: today */
+                end?: string;
+                /** @description Default: 90 days ago */
+                start?: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
                 };
             };
         };
@@ -2462,6 +2695,28 @@ export interface operations {
             };
         };
     };
+    invoices_export_retrieve: {
+        parameters: {
+            query?: {
+                customer?: number;
+                status?: "draft" | "overdue" | "paid" | "partial" | "sent" | "unpaid" | "void";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+        };
+    };
     items_list: {
         parameters: {
             query?: {
@@ -2608,6 +2863,69 @@ export interface operations {
             };
         };
     };
+    online_payments_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LencoAccount"];
+                };
+            };
+        };
+    };
+    online_payments_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["LencoAccountRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["LencoAccountRequest"];
+                "multipart/form-data": components["schemas"]["LencoAccountRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LencoAccount"];
+                };
+            };
+        };
+    };
+    online_payments_test_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionTest"];
+                };
+            };
+        };
+    };
     payments_list: {
         parameters: {
             query?: {
@@ -2670,6 +2988,30 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    payments_export_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Up to this date (inclusive) */
+                end?: string;
+                /** @description From this date (inclusive) */
+                start?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
             };
         };
     };

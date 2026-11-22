@@ -1,4 +1,5 @@
 import {
+  Download,
   FileSignature,
   FileText,
   LayoutDashboard,
@@ -26,6 +27,7 @@ export const MAIN_NAV: NavItem[] = [
 export const MORE_NAV: NavItem[] = [
   { to: "/recurring", label: "Repeating invoices", icon: Repeat },
   { to: "/items", label: "Items & services", icon: Package },
+  { to: "/exports", label: "Export (CSV)", icon: Download },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 

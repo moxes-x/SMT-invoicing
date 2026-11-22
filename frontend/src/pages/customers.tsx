@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { MessageCircle, Phone, Plus, Search, Users } from "lucide-react";
+import { MessageCircle, Phone, Plus, ScrollText, Search, Users } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router";
@@ -170,6 +170,11 @@ export function CustomersPage() {
                     </Button>
                   </>
                 )}
+                <Button asChild variant="ghost" size="icon" aria-label={`Statement for ${c.name}`}>
+                  <Link to={`/customers/${c.id}/statement`}>
+                    <ScrollText />
+                  </Link>
+                </Button>
                 <Button asChild variant="outline" size="sm">
                   <Link to={`/invoices?customer=${c.id}`}>Invoices</Link>
                 </Button>

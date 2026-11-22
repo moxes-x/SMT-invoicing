@@ -99,6 +99,30 @@ class InvoiceViewSet(
     def perform_create(self, serializer: Any) -> None:
         serializer.save()  # business is stamped by services.create_invoice
 
+    @extend_schema(responses={(200, "text/csv"): OpenApiTypes.STR})
+    @action(detail=False, methods=["get"])
+    def export(self, request: Request) -> HttpResponse:
+        """The invoice list as CSV (same filters as the list; amounts in Kwacha)."""
+        from apps.payments.views import csv_response, major
+
+        qs = self.filter_queryset(self.get_queryset()).order_by("issue_date", "number")
+        rows = (
+            [
+                i.number,
+                i.issue_date.isoformat() if i.issue_date else "",
+                i.due_date.isoformat() if i.due_date else "",
+                i.customer.name,
+                i.currency,
+                major(i.total),
+                major(i.amount_paid),
+                major(i.balance) if i.status == Invoice.Status.SENT else "0.00",
+                i.display_status_label,
+            ]
+            for i in qs
+        )
+        header = ["Number", "Issued", "Due", "Customer", "Currency", "Total", "Paid", "Balance"]
+        return csv_response("invoices.csv", [*header, "Status"], rows)
+
     def _fresh(self, invoice: Invoice) -> Response:
         obj = self.get_queryset().get(pk=invoice.pk)
         return Response(InvoiceSerializer(obj, context=self.get_serializer_context()).data)
@@ -252,6 +276,9 @@ def dashboard(request: Request) -> Response:
 
 class ConfigSerializer(serializers.Serializer[Any]):
     whatsapp_api = serializers.BooleanField(help_text="Automatic WhatsApp sending is set up")
+    online_payments = serializers.BooleanField(
+        help_text="This business takes Pay now payments through Lenco"
+    )
 
 
 @extend_schema(responses=ConfigSerializer)
@@ -259,4 +286,11 @@ class ConfigSerializer(serializers.Serializer[Any]):
 @permission_classes([HasBusiness])
 def app_config(request: Request) -> Response:
     """What this server can do, so the app shows only working options."""
-    return Response({"whatsapp_api": whatsapp.is_enabled()})
+    from apps.payments.online import account_for
+
+    return Response(
+        {
+            "whatsapp_api": whatsapp.is_enabled(),
+            "online_payments": account_for(require_business(request)) is not None,
+        }
+    )

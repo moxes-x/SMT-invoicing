@@ -4,6 +4,7 @@ import { useMe } from "@/api/auth";
 import { AppLayout } from "@/components/app-layout";
 import { CustomersPage } from "@/pages/customers";
 import { DashboardPage } from "@/pages/dashboard";
+import { ExportsPage } from "@/pages/exports";
 import { InvoiceDetailPage } from "@/pages/invoice-detail";
 import { InvoiceEditorPage } from "@/pages/invoice-editor";
 import { InvoicesPage } from "@/pages/invoices";
@@ -18,6 +19,7 @@ import { RecurringPage } from "@/pages/recurring";
 import { RecurringEditorPage } from "@/pages/recurring-editor";
 import { SettingsPage } from "@/pages/settings";
 import { SignupPage } from "@/pages/signup";
+import { StatementPage } from "@/pages/statement";
 import { Providers } from "@/providers";
 
 function FullPageSpinner() {
@@ -75,6 +77,8 @@ const routes = [
           { path: "/recurring/new", element: <RecurringEditorPage /> },
           { path: "/recurring/:id/edit", element: <RecurringEditorPage /> },
           { path: "/customers", element: <CustomersPage /> },
+          { path: "/customers/:id/statement", element: <StatementPage /> },
+          { path: "/exports", element: <ExportsPage /> },
           { path: "/items", element: <ItemsPage /> },
           { path: "/settings", element: <SettingsPage /> },
           { path: "/more", element: <MorePage /> },

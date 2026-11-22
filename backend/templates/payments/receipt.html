@@ -1,0 +1,52 @@
+{% load money %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Receipt {{ payment.receipt_number }} · {{ business.name }}</title>
+  {% include "documents/_styles.html" %}
+</head>
+<body>
+<div class="page">
+  <div class="top">
+    <div>
+      <h1>Receipt</h1>
+      <div class="muted">{{ payment.receipt_number }}</div>
+    </div>
+    <div><span class="badge paid">Paid</span></div>
+  </div>
+  <div class="grid">
+    <div>
+      <div class="label">From</div>
+      <div class="biz">{{ business.name }}</div>
+      {% if business.address %}<div class="muted" style="white-space:pre-line">{{ business.address }}</div>{% endif %}
+      {% if business.phone %}<div class="muted">{{ business.phone }}</div>{% endif %}
+      {% if business.tpin %}<div class="muted">TPIN {{ business.tpin }}</div>{% endif %}
+    </div>
+    <div>
+      <div class="label">Received from</div>
+      <div class="biz">{{ customer.name }}</div>
+      {% if customer.phone %}<div class="muted">{{ customer.phone }}</div>{% endif %}
+    </div>
+    <div>
+      <div class="label">Date</div>
+      <div>{{ payment.paid_on|date:"j M Y" }}</div>
+    </div>
+    <div>
+      <div class="label">For invoice</div>
+      <div>{% if pdf %}{{ invoice.number }}{% else %}<a href="{{ invoice.public_path }}" style="color:var(--brand)">{{ invoice.number }}</a>{% endif %}</div>
+    </div>
+  </div>
+  <div class="totals" style="max-width:none">
+    <div class="grand"><span>Amount received</span><span>{{ payment.amount|money:invoice.currency }}</span></div>
+    <div><span class="muted">Paid by</span><span>{{ payment.get_method_display }}</span></div>
+    {% if payment.reference %}<div><span class="muted">Reference</span><span>{{ payment.reference }}</span></div>{% endif %}
+    <div><span class="muted">Invoice total</span><span>{{ invoice.total|money:invoice.currency }}</span></div>
+    <div class="due"><span>{% if invoice.balance > 0 %}Balance still due{% else %}Balance{% endif %}</span><span>{{ invoice.balance|money:invoice.currency }}</span></div>
+  </div>
+  {% if not pdf %}<div class="actions"><a class="btn" href="pdf/">Download PDF</a></div>{% endif %}
+  <footer class="muted">This is a payment receipt, not a tax invoice.</footer>
+</div>
+</body>
+</html>

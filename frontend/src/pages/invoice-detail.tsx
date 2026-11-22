@@ -9,6 +9,7 @@ import {
   ExternalLink,
   MessageCircle,
   Pencil,
+  ReceiptText,
   RefreshCw,
   Send,
   Trash2,
@@ -37,6 +38,7 @@ import { MoneyInput } from "@/components/money-input";
 import { ErrorNote } from "@/components/page";
 import { DeliveryList, SendForm } from "@/components/send-form";
 import { StatusBadge } from "@/components/status-badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog } from "@/components/ui/dialog";
@@ -51,6 +53,8 @@ const METHODS: { value: PaymentMethod; label: string }[] = [
   { value: "cash", label: "Cash" },
   { value: "mtn_momo", label: "MTN MoMo" },
   { value: "airtel_money", label: "Airtel Money" },
+  { value: "zamtel_kwacha", label: "Zamtel Kwacha" },
+  { value: "card", label: "Card" },
   { value: "bank", label: "Bank transfer" },
   { value: "other", label: "Other" },
 ];
@@ -197,6 +201,7 @@ function Summary({ invoice }: { invoice: Invoice }) {
 }
 
 function Actions({ invoice, open }: { invoice: Invoice; open: (d: DialogName) => void }) {
+  const { data: config } = useAppConfig();
   const deliver = useSendInvoice(invoice.id, "deliver");
   const action = useInvoiceAction(invoice.id);
   const [copied, setCopied] = useState(false);
@@ -292,6 +297,12 @@ function Actions({ invoice, open }: { invoice: Invoice; open: (d: DialogName) =>
           </Button>
         )}
       </div>
+      {canPay && config?.online_payments && invoice.currency === "ZMW" && (
+        <p className="text-muted-foreground text-xs">
+          Your customer can pay this online from the invoice link (Pay now). It's marked paid by
+          itself when the money arrives.
+        </p>
+      )}
       {isDraft && (
         <p className="text-muted-foreground text-xs">
           Sending locks the invoice. To change it afterwards you void it and issue a corrected copy.
@@ -302,34 +313,63 @@ function Actions({ invoice, open }: { invoice: Invoice; open: (d: DialogName) =>
   );
 }
 
+function receiptText(invoice: Invoice, p: Invoice["payments"][number]): string {
+  return (
+    `Thank you${invoice.customer.name ? `, ${invoice.customer.name.split(" ")[0]}` : ""}. ` +
+    `Receipt ${p.receipt_number} for ${formatMoney(p.amount, invoice.currency)} ` +
+    `against invoice ${invoice.number}: ${p.receipt_url}`
+  );
+}
+
 function Payments({ invoice }: { invoice: Invoice }) {
   const remove = useDeletePayment();
+  const phone = invoice.customer.phone?.replace("+", "") ?? "";
   return (
     <Section title="Payments">
       <ul className="divide-y">
         {invoice.payments.map((p) => (
           <li key={p.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-            <span>
-              <span className="block font-medium">
+            <span className="min-w-0">
+              <span className="flex flex-wrap items-center gap-2 font-medium">
                 {formatMoney(p.amount, invoice.currency)} · {p.method_label}
+                {p.source === "online" && <Badge tone="success">Paid online</Badge>}
               </span>
-              <span className="text-muted-foreground text-xs">
+              <span className="text-muted-foreground block text-xs">
                 {formatDate(p.paid_on)}
+                {p.receipt_number && ` · ${p.receipt_number}`}
                 {p.reference && ` · Ref ${p.reference}`}
               </span>
             </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Delete payment"
-              onClick={() => {
-                if (window.confirm("Delete this payment? Use this to fix a mistake.")) {
-                  remove.mutate(p.id);
-                }
-              }}
-            >
-              <Trash2 />
-            </Button>
+            <span className="flex shrink-0 items-center">
+              <Button asChild variant="ghost" size="icon" aria-label="Open receipt">
+                <a href={p.receipt_url} target="_blank" rel="noreferrer">
+                  <ReceiptText />
+                </a>
+              </Button>
+              <Button asChild variant="ghost" size="icon" aria-label="Send receipt on WhatsApp">
+                <a
+                  href={`https://wa.me/${phone}?text=${encodeURIComponent(receiptText(invoice, p))}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <MessageCircle />
+                </a>
+              </Button>
+              {p.source !== "online" && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Delete payment"
+                  onClick={() => {
+                    if (window.confirm("Delete this payment? Use this to fix a mistake.")) {
+                      remove.mutate(p.id);
+                    }
+                  }}
+                >
+                  <Trash2 />
+                </Button>
+              )}
+            </span>
           </li>
         ))}
       </ul>
@@ -384,7 +424,7 @@ function Sending({ invoice }: { invoice: Invoice }) {
 
 const paymentSchema = z.object({
   amount: z.string().refine((v) => (parseMoney(v) ?? 0) > 0, "Enter an amount more than 0."),
-  method: z.enum(["cash", "mtn_momo", "airtel_money", "bank", "other"]),
+  method: z.enum(["cash", "mtn_momo", "airtel_money", "zamtel_kwacha", "card", "bank", "other"]),
   paid_on: z.string().min(1),
   reference: z.string().max(100),
   note: z.string().max(300),

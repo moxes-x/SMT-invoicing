@@ -1,6 +1,6 @@
 # Invoicing
 
-Invoices, quotes, repeating invoices, payment tracking, reminders and WhatsApp/email sending for Zambian small businesses that are **not
+Invoices, quotes, repeating invoices, online payments, receipts, reminders and WhatsApp/email sending for Zambian small businesses that are **not
 VAT-registered**: turnover-tax payers, freelancers, small traders and service providers who today
 send invoices as photos, Word files or WhatsApp texts and lose track of who has paid.
 
@@ -22,7 +22,8 @@ React SPA (Vite + TS) ──HTTPS──► Django + DRF ──► PostgreSQL
                                      ├──► Celery + Redis
                                      ├──► Object storage (R2/S3)
                                      ├──► Email (django-anymail)
-                                     └──► WhatsApp Cloud API (optional)
+                                     ├──► WhatsApp Cloud API (optional)
+                                     └──► Lenco (each business's own account, optional)
 ```
 
 ## Key decisions
@@ -79,7 +80,8 @@ pnpm dev                                 # http://localhost:5173
 uv run pytest && uv run ruff check . && uv run mypy .
 # frontend
 pnpm test && pnpm lint && pnpm typecheck
-# end to end (with both servers running)
+# end to end (with both servers running, Django pointed at the fake Lenco:
+#   node e2e/fake-lenco.mjs &  and  LENCO_SANDBOX_API_URL=http://localhost:8090/access/v2)
 cd e2e && pnpm install && pnpm exec playwright test
 # after changing the API
 cd backend && uv run python manage.py spectacular --file openapi.yml && cd ../frontend && pnpm gen:api
@@ -151,6 +153,45 @@ Install hooks once with `uv run --directory backend pre-commit install`.
   buttons (CSRF-protected form, no JS). "Make invoice" copies the lines into a new draft invoice
   and links the two.
 
+## Phase 3: getting paid
+
+- **Pay now.** A business connects its **own** Lenco (BroadPay) merchant account in Settings
+  (public key + secret key; the secret is write-only and stored encrypted with
+  `FIELD_ENCRYPTION_KEY`). Money goes straight to the business, so this app never holds customer
+  funds. Sent, unpaid **Kwacha** invoices then show *Pay now* on the customer link:
+  - **Mobile money** (MTN, Airtel, Zamtel): no JavaScript. The customer confirms their number,
+    Lenco pushes a PIN prompt to the phone, and a waiting page refreshes itself until Lenco says
+    successful or failed.
+  - **Card**: Lenco's own popup widget (`inline.js`), so card numbers never touch this server.
+    The result is always verified server-side with Lenco's status API.
+- **Confirmation, three ways, applied once.** The webhook
+  (`/api/webhooks/lenco/<per-business id>/`, shown in Settings to paste into Lenco's dashboard),
+  the waiting page polling (at most every 4 s), and a Celery beat job every 10 minutes that
+  re-checks anything still open (webhooks can be missed). Each webhook is checked against
+  `X-Lenco-Signature` (HMAC-SHA512 of the raw body, keyed with the hex SHA-256 of the business's
+  secret key), de-duplicated, and the payment attempt row is locked, so a payment is recorded
+  exactly once whichever arrives first.
+- **What happens on success:** a `Payment` (source *online*, method MTN/Airtel/Zamtel/card, Lenco
+  reference) for the amount Lenco reports, the invoice moves to paid/partly paid, the timeline
+  says *Paid online*, the owner gets an email and the customer gets their receipt by email.
+  Online payments can't be deleted (refund in Lenco instead). If a customer pays twice, both are
+  recorded and the timeline flags the overpayment.
+- **Receipts** for every payment, online or recorded by hand: `RCT-<year>-<nnnn>`, a public page
+  `/r/<uuid>/` and PDF, listed on the invoice link, and one-tap "send receipt on WhatsApp" in the
+  app. Existing payments got receipt numbers in the migration.
+- **Statements** per customer and currency for any date range: opening balance, invoices and
+  payments with a running balance, closing balance, unpaid invoices. In the app and as a PDF.
+- **CSV exports** of invoices (honours the list filters) and payments (date range), amounts in
+  Kwacha, UTF-8 with BOM so Excel opens them cleanly. Under More → Export.
+
+**Testing with Lenco's sandbox:** create a Lenco account, copy the sandbox public and secret keys
+into Settings → Online payments, choose *Sandbox*, press *Test connection*, and paste the webhook
+URL into Lenco. Sandbox numbers: MTN `0961111111` and Airtel `0971111111` succeed;
+`0962222222` fails (not enough funds). Lenco's docs don't publish the sandbox **API** host, so it's
+`LENCO_SANDBOX_API_URL` (default `https://sandbox.lenco.co/access/v2`): confirm it with Lenco. The
+webhook can't reach `localhost`; use a tunnel (e.g. `cloudflared`) or rely on polling locally.
+End-to-end tests use `e2e/fake-lenco.mjs` instead of the real sandbox.
+
 ## API
 
 | Method | Path | |
@@ -168,7 +209,11 @@ Install hooks once with `uv run --directory backend pre-commit install`.
 | POST | `/api/invoices/{id}/reminders/` | `{paused: bool}` for automatic reminders |
 | POST | `/api/invoices/{id}/whatsapp/` · `email/` | Phase 1 send endpoints (still work) |
 | GET | `/api/invoices/{id}/pdf/` | Owner download |
-| GET/DELETE | `/api/payments/{id}/` | Undo a payment |
+| GET/DELETE | `/api/payments/{id}/` | Undo a payment (not online ones) |
+| GET | `/api/payments/export/` · `/api/invoices/export/` | CSV; `?start=&end=` for payments |
+| GET/PUT | `/api/online-payments/` | This business's Lenco keys; `POST …/test/` checks them |
+| GET | `/api/customers/{id}/statement/` · `statement/pdf/` | `?start=&end=&currency=` |
+| POST | `/api/webhooks/lenco/{id}/` | Lenco collection events (signed) |
 | GET | `/api/dashboard/` | Owed, overdue, paid this month, top debtors |
 | CRUD | `/api/quotes/` | `?status=draft\|open\|sent\|accepted\|declined\|expired\|converted` |
 | POST | `/api/quotes/{id}/deliver/` · `respond/` · `convert/` | Send, record answer, make invoice |
@@ -177,6 +222,8 @@ Install hooks once with `uv run --directory backend pre-commit install`.
 | GET/POST | `/api/webhooks/whatsapp/` · `/api/webhooks/email/…` | Delivery status callbacks (public, signed) |
 | GET | `/i/{token}/` · `/i/{token}/pdf/` | Customer-facing invoice and PDF |
 | GET/POST | `/q/{token}/` · `respond/` · `pdf/` | Customer-facing quote, accept/decline, PDF |
+| POST/GET | `/i/{token}/pay/` · `pay/{reference}/` | Pay now and the waiting page |
+| GET | `/r/{token}/` · `/r/{token}/pdf/` | Customer-facing receipt and PDF |
 
 All amounts are integers in ngwee (or cents for USD). Full schema: `/api/docs/`.
 
@@ -187,7 +234,7 @@ All amounts are integers in ngwee (or cents for USD). Full schema: `/api/docs/`.
 | **0 – Setup** ✅ | Repo, Docker, CI, email auth, Business/Membership tenancy, hello world |
 | **1 – MVP** ✅ | Customers, items, invoices (draft/send/void), PDF, public link + viewed, WhatsApp click-to-chat, email, manual payments, dashboard |
 | **2 – Automation** ✅ | WhatsApp Cloud API, delivery webhooks, reminders, recurring invoices, quotes |
-| 3 – Get paid | Mobile-money/card "Pay now", webhook reconciliation, receipts, statements |
+| **3 – Get paid** ✅ | Mobile-money/card "Pay now", webhook reconciliation, receipts, statements, CSV export |
 | 4 – Grow | ZRA Smart Invoice integration, team roles, PWA, Bemba/Nyanja labels |
 
 Customer phone numbers and emails are personal data, handled in line with Zambia's Data Protection

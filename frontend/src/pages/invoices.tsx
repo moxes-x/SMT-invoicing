@@ -1,7 +1,7 @@
-import { FilePlus2, FileText, Search, X } from "lucide-react";
+import { Download, FilePlus2, FileText, Search, X } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
 
-import { useCustomer, useInvoices } from "@/api/resources";
+import { qs, useCustomer, useInvoices } from "@/api/resources";
 import { EmptyState, PageHeader } from "@/components/page";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
@@ -41,11 +41,18 @@ export function InvoicesPage() {
       <PageHeader
         title="Invoices"
         actions={
-          <Button asChild>
-            <Link to={customerId ? `/invoices/new?customer=${customerId}` : "/invoices/new"}>
-              <FilePlus2 /> New
-            </Link>
-          </Button>
+          <>
+            <Button asChild variant="outline" size="icon" aria-label="Export these invoices (CSV)">
+              <a href={`/api/invoices/export/${qs({ status, search, customer: customerId })}`}>
+                <Download />
+              </a>
+            </Button>
+            <Button asChild>
+              <Link to={customerId ? `/invoices/new?customer=${customerId}` : "/invoices/new"}>
+                <FilePlus2 /> New
+              </Link>
+            </Button>
+          </>
         }
       />
       <div className="relative">

@@ -104,3 +104,79 @@ def whatsapp_api(settings, monkeypatch):
         lambda **kw: real_client(transport=httpx.MockTransport(fake.handler)),
     )
     return fake
+
+
+class FakeLenco:
+    """Stands in for api.lenco.co. Set `collect` / `statuses[reference]` to script answers."""
+
+    def __init__(self):
+        self.requests = []
+        self.collect = {"status": "pay-offline"}
+        self.statuses = {}  # reference -> data dict, or an int HTTP status
+        self.error = None  # (http_status, message) for the next call
+
+    @staticmethod
+    def data(reference, status, amount="500.00", **extra):
+        return {
+            "id": f"lenco-{reference}",
+            "amount": amount,
+            "fee": "5.00",
+            "currency": "ZMW",
+            "reference": reference,
+            "lencoReference": f"LR{abs(hash(reference)) % 10**8}",
+            "type": "mobile-money",
+            "status": status,
+            "reasonForFailure": None,
+            "mobileMoneyDetails": {"country": "zm", "phone": "0961111111", "operator": "mtn"},
+            **extra,
+        }
+
+    def handler(self, request):
+        import json
+
+        import httpx
+
+        self.requests.append(request)
+        if self.error:
+            status, message = self.error
+            self.error = None
+            return httpx.Response(status, json={"status": False, "message": message})
+        if request.method == "POST" and request.url.path.endswith("/collections/mobile-money"):
+            body = json.loads(request.content)
+            data = self.data(body["reference"], **self.collect)
+            return httpx.Response(200, json={"status": True, "message": "", "data": data})
+        if "/collections/status/" in request.url.path:
+            reference = request.url.path.rsplit("/", 1)[-1]
+            answer = self.statuses.get(reference, 404)
+            if isinstance(answer, int):
+                return httpx.Response(answer, json={"status": False, "message": "Not found"})
+            return httpx.Response(200, json={"status": True, "message": "", "data": answer})
+        return httpx.Response(404, json={"status": False, "message": "Unknown path"})
+
+    def bodies(self):
+        import json
+
+        return [json.loads(r.content) for r in self.requests if r.method == "POST"]
+
+
+@pytest.fixture
+def lenco_api(monkeypatch):
+    import httpx
+
+    fake = FakeLenco()
+    real_client = httpx.Client
+    monkeypatch.setattr(
+        "apps.payments.lenco.httpx.Client",
+        lambda **kw: real_client(transport=httpx.MockTransport(fake.handler)),
+    )
+    return fake
+
+
+@pytest.fixture
+def lenco_account(owner_a):
+    from apps.payments.models import LencoAccount
+
+    account = LencoAccount(business=owner_a.business, enabled=True, public_key="pub-test-key")
+    account.secret_key = "sk-test-secret-0000"
+    account.save()
+    return account

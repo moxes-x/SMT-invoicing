@@ -33,7 +33,7 @@ export interface Page<T> {
   results: T[];
 }
 
-function qs(params: Record<string, string | number | undefined>): string {
+export function qs(params: Record<string, string | number | undefined>): string {
   const p = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== "") p.set(k, String(v));
   const s = p.toString();
@@ -358,5 +358,53 @@ export function useDeleteRecurring() {
   return useMutation({
     mutationFn: (id: number) => api<void>(`/recurring/${id}/`, { method: "DELETE" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: recurringKeys.all }),
+  });
+}
+
+// ---- Phase 3: online payments, statements, exports ------------------------------------------
+export type LencoAccount = S["LencoAccount"];
+export type LencoAccountRequest = S["LencoAccountRequest"];
+export type Statement = S["Statement"];
+
+export function useOnlinePayments() {
+  return useQuery({
+    queryKey: ["online-payments"],
+    queryFn: () => api<LencoAccount>("/online-payments/"),
+  });
+}
+
+export function useSaveOnlinePayments() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: LencoAccountRequest) =>
+      api<LencoAccount>("/online-payments/", { method: "PUT", json: body }),
+    onSuccess: (account) => {
+      qc.setQueryData(["online-payments"], account);
+      return qc.invalidateQueries({ queryKey: ["config"] });
+    },
+  });
+}
+
+export function useTestOnlinePayments() {
+  return useMutation({
+    mutationFn: () => api<S["ConnectionTest"]>("/online-payments/test/", { method: "POST" }),
+  });
+}
+
+export interface StatementParams {
+  start: string;
+  end: string;
+  currency: "ZMW" | "USD";
+}
+
+export function statementQuery(p: StatementParams): string {
+  return qs({ start: p.start, end: p.end, currency: p.currency });
+}
+
+export function useStatement(customerId: number, params: StatementParams) {
+  return useQuery({
+    queryKey: ["statement", customerId, params],
+    queryFn: () => api<Statement>(`/customers/${customerId}/statement/${statementQuery(params)}`),
+    placeholderData: keepPreviousData,
   });
 }

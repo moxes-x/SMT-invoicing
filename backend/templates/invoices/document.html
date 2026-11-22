@@ -67,6 +67,38 @@
     {% if invoice.status != "void" %}<div class="due"><span>Balance due</span><span>{{ invoice.balance|money:invoice.currency }}</span></div>{% endif %}
   </div>
 
+  {% if can_pay_online and not pdf %}
+  <div class="pay" id="pay">
+    <h2>Pay {{ invoice.balance|money:invoice.currency }} now</h2>
+    <div class="muted">Mobile money or card, paid straight to {{ business.name }} through Lenco.</div>
+    {% if pay_error %}<div class="note bad">{{ pay_error }}</div>{% endif %}
+    <form method="post" action="pay/">
+      {% csrf_token %}
+      <input type="hidden" name="method" value="mobile_money">
+      <div class="ops" role="radiogroup" aria-label="Mobile money network">
+        {% for value, label in operators %}<label><input type="radio" name="operator" value="{{ value }}" {% if value == operator %}checked{% endif %} required>{{ label }}</label>{% endfor %}
+      </div>
+      <label class="field">Mobile money number
+        <input name="phone" type="tel" inputmode="tel" autocomplete="tel" value="{{ pay_phone }}" placeholder="e.g. 096 123 4567" required>
+      </label>
+      <button class="btn" type="submit">Pay with mobile money</button>
+    </form>
+    <div class="or">or</div>
+    <form method="post" action="pay/">
+      {% csrf_token %}
+      <input type="hidden" name="method" value="card">
+      <label class="field">Email for your receipt
+        <input name="email" type="email" autocomplete="email" value="{{ customer.email }}" required>
+      </label>
+      <button class="btn secondary" type="submit">Pay by card</button>
+    </form>
+  </div>
+  {% endif %}
+
+  {% if payments and not pdf %}
+  <div class="box receipts"><div class="label">Receipts</div>{% for p in payments %}<div><a href="/r/{{ p.public_token }}/">{{ p.receipt_number|default:"Receipt" }}</a> · {{ p.amount|money:invoice.currency }} · {{ p.paid_on|date:"j M Y" }}</div>{% endfor %}</div>
+  {% endif %}
+
   {% if business.payment_details and invoice.balance > 0 and invoice.status != "void" %}
   <div class="box"><div class="label">How to pay</div>{{ business.payment_details }}<div class="muted" style="margin-top:6px">Please use <strong>{{ invoice.number }}</strong> as the reference.</div></div>
   {% endif %}

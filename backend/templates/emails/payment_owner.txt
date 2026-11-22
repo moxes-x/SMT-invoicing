@@ -1,0 +1,8 @@
+{% load money %}Good news: {{ invoice.customer.name }} paid {{ amount }} online for invoice {{ invoice.number }}.
+
+Method: {{ payment.get_method_display }}
+Lenco reference: {{ payment.reference }}
+Receipt: {{ payment.receipt_number }} ({{ payment.receipt_url }})
+{% if invoice.balance > 0 %}Still owed on this invoice: {{ invoice.balance|money:invoice.currency }}{% else %}The invoice is now fully paid.{% endif %}
+
+The money is in your Lenco account.
