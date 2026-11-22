@@ -1,0 +1,516 @@
+openapi: 3.0.3
+info:
+  title: Invoicing API
+  version: 0.1.0
+  description: Invoices, customers and payments for Zambian small businesses.
+paths:
+  /api/auth/csrf/:
+    get:
+      operationId: auth_csrf_retrieve
+      description: GET this once on app load so the browser has a csrftoken cookie
+        for later POSTs.
+      tags:
+      - auth
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/auth/login/:
+    post:
+      operationId: auth_login_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+          description: ''
+  /api/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      tags:
+      - auth
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      tags:
+      - auth
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+          description: ''
+  /api/auth/signup/:
+    post:
+      operationId: auth_signup_create
+      description: DRF skips CSRF for anonymous users; we enforce it here to block
+        login/signup CSRF.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+          description: ''
+  /api/businesses/:
+    get:
+      operationId: businesses_list
+      description: Businesses the user belongs to. Others are invisible (404), never
+        forbidden (403).
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - businesses
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBusinessList'
+          description: ''
+    post:
+      operationId: businesses_create
+      description: Businesses the user belongs to. Others are invisible (404), never
+        forbidden (403).
+      tags:
+      - businesses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BusinessRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BusinessRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Business'
+          description: ''
+  /api/businesses/{id}/:
+    get:
+      operationId: businesses_retrieve
+      description: Businesses the user belongs to. Others are invisible (404), never
+        forbidden (403).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - businesses
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Business'
+          description: ''
+    put:
+      operationId: businesses_update
+      description: Businesses the user belongs to. Others are invisible (404), never
+        forbidden (403).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - businesses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BusinessRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BusinessRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Business'
+          description: ''
+    patch:
+      operationId: businesses_partial_update
+      description: Businesses the user belongs to. Others are invisible (404), never
+        forbidden (403).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - businesses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBusinessRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBusinessRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBusinessRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Business'
+          description: ''
+  /api/businesses/{id}/switch/:
+    post:
+      operationId: businesses_switch_create
+      description: Businesses the user belongs to. Others are invisible (404), never
+        forbidden (403).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^\d+$
+        required: true
+      tags:
+      - businesses
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+          description: ''
+  /api/health/:
+    get:
+      operationId: health_retrieve
+      tags:
+      - health
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+          description: ''
+components:
+  schemas:
+    Business:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        phone:
+          type: string
+          maxLength: 32
+        address:
+          type: string
+        tpin:
+          oneOf:
+          - type: string
+            pattern: ^\d{10}$
+            maxLength: 10
+          - type: string
+            maxLength: 0
+        vat_registered:
+          type: boolean
+          description: VAT-registered businesses must issue tax invoices via ZRA Smart
+            Invoice.
+        payment_details:
+          type: string
+          description: Bank / MTN MoMo / Airtel Money details printed on invoices.
+        default_currency:
+          $ref: '#/components/schemas/DefaultCurrencyEnum'
+        role:
+          type: string
+          nullable: true
+          readOnly: true
+        compliance_notice:
+          type: string
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - compliance_notice
+      - created_at
+      - id
+      - name
+      - role
+    BusinessRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        phone:
+          type: string
+          maxLength: 32
+        address:
+          type: string
+        tpin:
+          oneOf:
+          - type: string
+            pattern: ^\d{10}$
+            maxLength: 10
+          - type: string
+            maxLength: 0
+        vat_registered:
+          type: boolean
+          description: VAT-registered businesses must issue tax invoices via ZRA Smart
+            Invoice.
+        payment_details:
+          type: string
+          description: Bank / MTN MoMo / Airtel Money details printed on invoices.
+        default_currency:
+          $ref: '#/components/schemas/DefaultCurrencyEnum'
+      required:
+      - name
+    DefaultCurrencyEnum:
+      enum:
+      - ZMW
+      - USD
+      type: string
+      description: |-
+        * `ZMW` - Zambian Kwacha
+        * `USD` - US Dollar
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+        database:
+          type: string
+      required:
+      - database
+      - status
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    Me:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        current_business:
+          allOf:
+          - $ref: '#/components/schemas/Business'
+          nullable: true
+        businesses:
+          type: array
+          items:
+            $ref: '#/components/schemas/Business'
+      required:
+      - businesses
+      - current_business
+      - user
+    PaginatedBusinessList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Business'
+    PatchedBusinessRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        phone:
+          type: string
+          maxLength: 32
+        address:
+          type: string
+        tpin:
+          oneOf:
+          - type: string
+            pattern: ^\d{10}$
+            maxLength: 10
+          - type: string
+            maxLength: 0
+        vat_registered:
+          type: boolean
+          description: VAT-registered businesses must issue tax invoices via ZRA Smart
+            Invoice.
+        payment_details:
+          type: string
+          description: Bank / MTN MoMo / Airtel Money details printed on invoices.
+        default_currency:
+          $ref: '#/components/schemas/DefaultCurrencyEnum'
+    SignupRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        full_name:
+          type: string
+          maxLength: 150
+      required:
+      - email
+      - password
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        full_name:
+          type: string
+          maxLength: 150
+      required:
+      - email
+      - id
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
